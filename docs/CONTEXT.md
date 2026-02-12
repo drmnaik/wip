@@ -84,6 +84,7 @@ cli.py: _run_briefing()
     │         opens with GitPython
     │         collects branch, dirty, staged, untracked, stash,
     │         ahead/behind, recent branches, recent commits
+    │         detects agent sessions (author/branch pattern matching)
     │
     ├── worklist.py: get_items()        → list[WorkItem]
     │       reads ~/.wip/worklist.json
@@ -117,9 +118,9 @@ cli.py: _get_llm_provider()
 | Module         | Responsibility                              | Key exports                                    |
 |----------------|---------------------------------------------|------------------------------------------------|
 | `cli.py`       | Command routing, flags, user interaction     | `app` (Typer instance)                         |
-| `config.py`    | Read/write `~/.wip/config.toml`, defaults    | `WipConfig`, `load_config()`, `save_config()`, `detect_git_author()`, `CONFIG_PATH` |
+| `config.py`    | Read/write `~/.wip/config.toml`, defaults    | `WipConfig`, `AgentsConfig`, `load_config()`, `save_config()`, `detect_git_author()`, `CONFIG_PATH` |
 | `discovery.py` | Find git repos in filesystem                 | `discover_repos(directories, depth)`           |
-| `scanner.py`   | Collect git status for each repo             | `RepoStatus`, `BranchInfo`, `CommitInfo`, `scan_repo()`, `scan_repos()` |
+| `scanner.py`   | Collect git status and agent detection per repo | `RepoStatus`, `AgentSession`, `BranchInfo`, `CommitInfo`, `scan_repo()`, `scan_repos()` |
 | `display.py`   | Render output to terminal or JSON            | `render_briefing()`, `render_json()`, `render_worklist()` |
 | `worklist.py`  | WIP task tracker, JSON persistence           | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `get_items_for_repo()`, `detect_repo()` |
 | `llm/__init__` | Re-exports for the LLM package                | `LLMProvider`, `LLMResponse`, `get_provider()`, `list_providers()` |
@@ -133,6 +134,17 @@ cli.py: _get_llm_provider()
 ---
 
 ## 3. Data models
+
+### AgentsConfig (config.py)
+
+```python
+@dataclass
+class AgentsConfig:
+    authors: list[str]         # Substrings matched case-insensitively against commit author names
+    branch_patterns: list[str] # Branch name prefixes indicating agent activity
+```
+
+Defaults: authors = `["claude", "copilot", "cursor", "devin", "codex", "github-actions", "bot"]`, branch_patterns = `["agent/", "claude/", "copilot/", "devin/", "cursor/"]`.
 
 ### LLMConfig (config.py)
 
@@ -154,6 +166,7 @@ class WipConfig:
     scan_depth: int          # How deep to recurse (default: 3)
     recent_days: int         # Lookback window for branches (default: 14)
     llm: LLMConfig           # LLM provider settings (optional)
+    agents: AgentsConfig     # Agent detection patterns (works with defaults)
 ```
 
 ### RepoStatus (scanner.py)
@@ -173,6 +186,23 @@ class RepoStatus:
     last_commit_ago: str               # Human-readable time since last commit
     recent_branches: list[BranchInfo]  # Branches with activity in recent_days
     recent_commits: list[CommitInfo]   # Author's commits in last 24h
+    agent_sessions: list[AgentSession] # Detected agent activity sessions
+```
+
+### AgentSession (scanner.py)
+
+```python
+@dataclass
+class AgentSession:
+    agent: str                 # Inferred agent name (e.g. "claude", "copilot")
+    branch: str                # Branch the agent worked on
+    commit_count: int          # Number of commits in this session
+    files_changed: int         # Total files touched (from diff stats)
+    first_commit_ago: str      # Human-readable time of first commit
+    last_commit_ago: str       # Human-readable time of last commit
+    first_commit_ts: float     # For sorting
+    last_commit_ts: float      # For recency checks
+    status: str                # "active" (<1h), "recent" (<24h), "stale" (>24h)
 ```
 
 ### BranchInfo (scanner.py)
@@ -317,6 +347,11 @@ recent_days = 14
 provider = "anthropic"
 model = "claude-haiku-4-5-20251001"
 api_key_env = "ANTHROPIC_API_KEY"
+
+# Optional: customize agent detection (defaults work out of the box)
+[agents]
+authors = ["claude", "copilot", "cursor", "devin", "codex", "github-actions", "bot"]
+branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
 ```
 
 ### TOML handling
@@ -393,12 +428,14 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Clean error handling — no tracebacks, user-friendly messages
 - All AI commands use streaming output
 
-### Phase 5: Agent Wrapper (FUTURE)
+### Phase 5: Passive Agent Detection (DONE)
 
-- `wip run <agent> "task"` — wrap coding agents, track sessions
-- Agent registry — what each agent did, branches, PRs, duration
-- Stuck detection — agent died + no PR + dirty state
-- Context handoff — launch new agent with previous agent's context
+- Detect coding agent activity from git signals (commit authors + branch naming patterns)
+- `AgentsConfig` with configurable author substrings and branch prefixes (sensible defaults, zero config)
+- `AgentSession` dataclass — agent name, branch, commit count, files changed, timestamps, status
+- Status: "active" (<1h since last commit), "recent" (<24h), "stale" (>24h)
+- Surfaced in terminal display (color-coded), JSON output, and LLM prompt context
+- All existing commands (`wip`, `wip --json`, `wip ai briefing/standup/ask`) get agent awareness automatically
 
 ### Phase 6: Agent Intelligence (FUTURE)
 
@@ -552,16 +589,16 @@ Package marker. Exports `__version__ = "0.1.0"`.
 CLI entry point. Creates Typer app with `config` and `ai` subgroups. Default action (no subcommand) runs the briefing pipeline. Contains `_run_briefing()` which orchestrates config → discovery → scan → worklist → display. Also contains `add`, `done`, `list` commands for the WIP tracker, and `ai briefing`, `ai standup`, `ai ask` commands for LLM features. Helper `_get_llm_provider()` resolves provider from config, `_scan_all()` runs the scan pipeline, `_llm_call()` handles streaming with error handling.
 
 ### `src/wip/config.py`
-Config management. `WipConfig` dataclass (includes nested `LLMConfig`). `load_config()` reads TOML including `[llm]` section. `save_config()` writes TOML. `detect_git_author()` runs `git config user.name`. Config lives at `~/.wip/config.toml`.
+Config management. `WipConfig` dataclass (includes nested `LLMConfig` and `AgentsConfig`). `load_config()` reads TOML including `[llm]` and `[agents]` sections. `save_config()` writes TOML (agents section only written if non-default). `detect_git_author()` runs `git config user.name`. Config lives at `~/.wip/config.toml`.
 
 ### `src/wip/discovery.py`
 Repo discovery. `discover_repos()` is the public API. `_walk_for_repos()` does recursive traversal. Stops at `.git/` dirs, skips junk directories, deduplicates.
 
 ### `src/wip/scanner.py`
-Git scanner. `scan_repo()` collects all status for one repo. `scan_repos()` iterates over multiple. Helper functions: `_count_stashes()`, `_ahead_behind()`, `_recent_branches()`, `_recent_commits()`, `_time_ago()`. All wrapped in try/except for resilience.
+Git scanner. `scan_repo()` collects all status for one repo including agent session detection. `scan_repos()` iterates over multiple. Helper functions: `_count_stashes()`, `_ahead_behind()`, `_recent_branches()`, `_recent_commits()`, `_detect_agent_sessions()`, `_match_author_agent()`, `_match_branch_agent()`, `_time_ago()`. Agent detection iterates all local branches, matches commit authors and branch prefixes against configurable patterns, groups into sessions with status (active/recent/stale). All wrapped in try/except for resilience.
 
 ### `src/wip/display.py`
-Terminal rendering. `render_briefing()` for human output. `render_json()` for machine output. `_render_repo()` handles one repo's display with status icons and colors. `render_worklist()` renders the WIP items section. `_render_work_item()` renders a single item with done/open styling. Items also appear under their linked repos.
+Terminal rendering. `render_briefing()` for human output. `render_json()` for machine output. `_render_repo()` handles one repo's display with status icons and colors, including agent sessions (color-coded: green=active, yellow=recent, red=stale). `_render_agent_session()` renders a single agent session line. `render_worklist()` renders the WIP items section. `_render_work_item()` renders a single item with done/open styling. Items also appear under their linked repos.
 
 ### `src/wip/worklist.py`
 WIP task tracker. `WorkItem` dataclass. `load_worklist()`/`save_worklist()` handle JSON persistence at `~/.wip/worklist.json`. `add_item()` creates items with auto-incrementing IDs. `complete_item()` marks done. `get_items()` and `get_items_for_repo()` provide filtered queries. `detect_repo()` walks cwd upward to find the nearest git repo root.
@@ -576,7 +613,7 @@ Abstract base class `LLMProvider` with `complete()` and `stream()` methods. `LLM
 Maps provider names to classes with lazy imports. `get_provider()` resolves API key (explicit → provider env var → `WIP_LLM_API_KEY` fallback) and instantiates provider. `list_providers()` returns available names.
 
 ### `src/wip/llm/prompts.py`
-Builds `(system, user)` prompt pairs from scan data. `build_context()` formats repos + work items as text. `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` wrap context in task-specific templates. `_format_repo()` converts a single `RepoStatus` to readable text.
+Builds `(system, user)` prompt pairs from scan data. `build_context()` formats repos + work items as text. `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` wrap context in task-specific templates. `_format_repo()` converts a single `RepoStatus` to readable text including agent activity sections.
 
 ### `src/wip/llm/anthropic.py`
 Anthropic Claude provider. Lazy client creation. `complete()` returns `LLMResponse`. `stream()` yields text chunks via `messages.stream()`. Maps Anthropic exceptions to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `claude-sonnet-4-5-20250929`.

@@ -26,9 +26,9 @@
 | Module         | Does what                        | Key exports                                  |
 |----------------|----------------------------------|----------------------------------------------|
 | `cli.py`       | Commands, flags, orchestration   | `app`                                        |
-| `config.py`    | TOML config read/write           | `WipConfig`, `load_config()`, `save_config()`|
+| `config.py`    | TOML config read/write           | `WipConfig`, `AgentsConfig`, `load_config()`, `save_config()`|
 | `discovery.py` | Find git repos on disk           | `discover_repos()`                           |
-| `scanner.py`   | Collect git status per repo      | `RepoStatus`, `scan_repo()`, `scan_repos()`  |
+| `scanner.py`   | Collect git status + agent detection | `RepoStatus`, `AgentSession`, `scan_repo()`, `scan_repos()` |
 | `display.py`   | Rich terminal output             | `render_briefing()`, `render_json()`, `render_worklist()` |
 | `worklist.py`  | WIP task tracker, JSON persist   | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `detect_repo()` |
 | `llm/base.py`  | ABC, response type, errors       | `LLMProvider`, `LLMResponse`, `LLMError` |

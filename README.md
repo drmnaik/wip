@@ -11,6 +11,7 @@ A morning briefing for developers. **wip** scans your git repositories and shows
 - 📝 **Work-in-progress tracker** — jot down tasks, link them to repos, see them in your briefing
 - 🎨 **Rich terminal output** — color-coded status with icons
 - 📦 **Multiple output modes** — human-friendly or JSON for scripting
+- 🕵️ **Agent detection** — passively detect coding agent activity (Claude, Copilot, Cursor, Devin) from git signals
 - 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
 - 🔌 **Provider abstraction** — Anthropic (implemented), OpenAI, Gemini (stubs ready)
 
@@ -60,6 +61,11 @@ recent_days = 14
 provider = "anthropic"
 model = "claude-haiku-4-5-20251001"
 api_key_env = "ANTHROPIC_API_KEY"
+
+# Optional: customize agent detection patterns
+[agents]
+authors = ["claude", "copilot", "cursor", "devin", "codex", "github-actions", "bot"]
+branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
 ```
 
 - **directories** — which directories to scan for git repos
@@ -70,6 +76,9 @@ api_key_env = "ANTHROPIC_API_KEY"
   - **provider** — `anthropic`, `openai`, or `gemini`
   - **model** — model ID (leave empty for provider default)
   - **api_key_env** — environment variable name holding your API key
+- **[agents]** — optional overrides for agent detection (works out of the box with defaults)
+  - **authors** — substrings matched case-insensitively against commit author names
+  - **branch_patterns** — branch name prefixes that indicate agent activity
 
 ## Commands
 
@@ -122,6 +131,9 @@ wip ai ask "summarize my week"
 auth-service (fix/token-refresh) ⚠
   3 dirty · 1 stash · last commit 14h ago
   2 ahead, 0 behind origin
+  agents:
+    claude on agent/add-tests — 12 commits, 14 files (23m ago) ● active
+    copilot on copilot/logout — 4 commits, 3 files (7h ago) ○ stale
   wip:
     #1 fix auth token refresh (2h ago)
   recent: main (3d), feat/oauth (5d)
@@ -187,9 +199,11 @@ python -m wip.cli
 - `wip ai briefing`, `wip ai standup`, `wip ai ask` with streaming
 - Prompt assembly from scan data, config-driven provider/model selection
 
-**Phase 5: Agent Wrapper** (Planned)
-- `wip run <agent> "task"` — track what coding agents do
-- Agent session registry, stuck detection, context handoff
+**Phase 5: Passive Agent Detection** ✅
+- Detect coding agent activity from git signals (author names, branch patterns)
+- Agent sessions surface in `wip`, `wip --json`, and all AI commands automatically
+- Configurable author/branch patterns with sensible defaults (zero config required)
+- Status tracking: active (<1h), recent (<24h), stale (>24h)
 
 **Phase 6: Agent Intelligence** (Planned)
 - LLM-powered review queues, conflict detection, delegation
