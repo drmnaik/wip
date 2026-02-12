@@ -1,6 +1,6 @@
 # wip — Where did I leave off?
 
-A morning briefing for developers. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention.
+A morning briefing for developers. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
 
 ## Features
 
@@ -11,6 +11,8 @@ A morning briefing for developers. **wip** scans your git repositories and shows
 - 📝 **Work-in-progress tracker** — jot down tasks, link them to repos, see them in your briefing
 - 🎨 **Rich terminal output** — color-coded status with icons
 - 📦 **Multiple output modes** — human-friendly or JSON for scripting
+- 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
+- 🔌 **Provider abstraction** — Anthropic (implemented), OpenAI, Gemini (stubs ready)
 
 ## Installation
 
@@ -21,6 +23,9 @@ cd wip
 
 # Install in editable mode
 pip install -e .
+
+# Optional: install Anthropic SDK for AI features
+pip install anthropic
 ```
 
 **Requirements:** Python 3.9+
@@ -50,14 +55,25 @@ directories = ["/Users/you/projects", "/Users/you/work"]
 author = "Your Name"
 scan_depth = 3
 recent_days = 14
+
+[llm]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+api_key_env = "ANTHROPIC_API_KEY"
 ```
 
 - **directories** — which directories to scan for git repos
 - **author** — your git author name (filters commits to show only yours)
 - **scan_depth** — how deep to search for repos (default: 3 levels)
 - **recent_days** — how far back to look for recent branches (default: 14 days)
+- **[llm]** — optional LLM configuration for AI features
+  - **provider** — `anthropic`, `openai`, or `gemini`
+  - **model** — model ID (leave empty for provider default)
+  - **api_key_env** — environment variable name holding your API key
 
-### Commands
+## Commands
+
+### Core
 
 ```bash
 wip               # Show briefing (default command)
@@ -67,16 +83,33 @@ wip --verbose     # Show full details
 wip config init   # Interactive setup
 wip config show   # Display current config
 wip version       # Show version
+```
 
-# Work-in-progress tracker
-wip add "fix auth bug"          # Add item (auto-links to current repo)
-wip add "read docs" --repo /path/to/repo  # Add item linked to specific repo
-wip done 1                      # Mark item #1 as done
-wip list                        # Show open items
-wip list --all                  # Show all items including completed
+### Work-in-progress tracker
+
+```bash
+wip add "fix auth bug"                     # Add item (auto-links to current repo)
+wip add "read docs" --repo /path/to/repo   # Add item linked to specific repo
+wip done 1                                 # Mark item #1 as done
+wip list                                   # Show open items
+wip list --all                             # Show all items including completed
+```
+
+### AI-powered commands
+
+Requires an LLM provider configured in `~/.wip/config.toml` and the corresponding API key set as an environment variable.
+
+```bash
+wip ai briefing                 # Narrative morning briefing
+wip ai standup                  # Generate a standup update from git activity
+wip ai ask "what was I working on yesterday?"
+wip ai ask "anything I forgot to push?"
+wip ai ask "summarize my week"
 ```
 
 ## Example Output
+
+### Standard briefing (`wip`)
 
 ```
  wip — 3 repos scanned
@@ -105,6 +138,23 @@ api-gateway (main) ↓
     #3 update API docs (1d ago)
 ```
 
+### AI briefing (`wip ai briefing`)
+
+```
+## Morning Briefing
+
+You were deep in a token refresh bug in auth-service yesterday evening.
+You changed the retry logic in 3 files but stashed something — probably
+an alternative approach. Your note says the issue is around line 340.
+You might want to start by comparing your stash against your current changes.
+
+The frontend is clean but you left a TODO about form validation on Tuesday.
+api-gateway just needs a pull — 3 commits behind, low priority.
+
+Suggested focus: finish auth-service first (uncommitted work at risk),
+then circle back to the frontend TODO.
+```
+
 ### Status Icons
 
 - ✓ — Clean repo, up to date
@@ -117,6 +167,9 @@ api-gateway (main) ↓
 # Install dependencies
 pip install -e .
 
+# Optional: AI features
+pip install anthropic
+
 # Run from source
 python -m wip.cli
 ```
@@ -124,22 +177,25 @@ python -m wip.cli
 ## Roadmap
 
 **Phase 0+1: Foundation + Scanner** ✅
-- Config management
-- Repo discovery
-- Git status scanning
-- Terminal output
+- Config management, repo discovery, git status scanning, terminal output
 
-**Phase 2: Interactive Worklist** ✅ (Current)
-- `wip add/done/list` commands
-- Items optionally linked to repos (auto-detected from cwd)
-- Persistent state in `~/.wip/worklist.json`
-- Worklist shown in briefing and under linked repos
-- Completed items hidden by default (`--all` to show)
+**Phase 2: Interactive Worklist** ✅
+- `wip add/done/list` commands with repo linking and persistent state
 
-**Phase 3: Smart Suggestions** (Planned)
-- Stale branch detection
-- Uncommitted work alerts
-- Intelligent next steps
+**Phase 4: LLM Integration** ✅
+- Provider abstraction (Anthropic implemented, OpenAI/Gemini stubs)
+- `wip ai briefing`, `wip ai standup`, `wip ai ask` with streaming
+- Prompt assembly from scan data, config-driven provider/model selection
+
+**Phase 5: Agent Wrapper** (Planned)
+- `wip run <agent> "task"` — track what coding agents do
+- Agent session registry, stuck detection, context handoff
+
+**Phase 6: Agent Intelligence** (Planned)
+- LLM-powered review queues, conflict detection, delegation
+
+**Phase 7: Orchestration** (Planned)
+- Multi-agent planning, dependency-aware scheduling, habit analysis
 
 ## License
 
@@ -147,4 +203,4 @@ MIT
 
 ## Author
 
-Built by Mahesh Naik with Claude Sonnet 4.5
+Built by Mahesh Naik with Claude
