@@ -12,6 +12,7 @@ A morning briefing for developers. **wip** scans your git repositories and shows
 - 🎨 **Rich terminal output** — color-coded status with icons
 - 📦 **Multiple output modes** — human-friendly or JSON for scripting
 - 🕵️ **Agent detection** — passively detect coding agent activity (Claude, Copilot, Cursor, Devin) from git signals
+- 📂 **Enriched file-level context** — changed files with diff stats, stash descriptions, commit bodies and file lists in LLM prompts and verbose output
 - 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
 - 🔌 **Provider abstraction** — Anthropic (implemented), OpenAI, Gemini (stubs ready)
 
@@ -205,11 +206,12 @@ python -m wip.cli
 - Configurable author/branch patterns with sensible defaults (zero config required)
 - Status tracking: active (<1h), recent (<24h), stale (>24h)
 
-**Phase 6: Agent Intelligence** (Planned)
-- LLM-powered review queues, conflict detection, delegation
+**Phase 6: Enriched File-Level Context** ✅
+- Changed files with diff stats (insertions/deletions), color-coded by stage in verbose output
+- Stash descriptions surfaced in verbose display and LLM prompts
+- Commit bodies (capped at 3 lines) and per-commit file lists (capped at 10 paths) in LLM context
 
-**Phase 7: Orchestration** (Planned)
-- Multi-agent planning, dependency-aware scheduling, habit analysis
+Ideas and contributions welcome — see `docs/CONTEXT.md` for architecture details.
 
 ## License
 
