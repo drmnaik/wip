@@ -19,16 +19,28 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 
 ## Installation
 
+### From PyPI (recommended)
+
 ```bash
-# Clone the repository
+pip install wip-cli
+```
+
+Or with [pipx](https://pipx.pypa.io/) for an isolated install:
+
+```bash
+pipx install wip-cli
+```
+
+### From source
+
+```bash
 git clone git@github.com:drmnaik/wip.git
 cd wip
-
-# Install in editable mode (includes all dependencies)
 pip install -e .
 ```
 
 **Requirements:** Python 3.9+
+**PyPI:** https://pypi.org/project/wip-cli/
 
 ## Quick Start
 
