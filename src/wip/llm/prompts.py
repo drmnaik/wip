@@ -15,12 +15,26 @@ Rules:
 - Be concise and direct. No filler.
 - Use plain language, not raw git output.
 - When suggesting priorities, explain WHY (staleness, risk, dependencies).
-- If there's nothing notable, say so briefly.
+- Group information by relevance, not by repo.
+- If there's nothing notable for a section, skip it or say so briefly.
 """
 
 BRIEFING_TEMPLATE = """\
 Here is the current state of my repositories and work items.
-Give me a briefing — what should I know, and what should I focus on first?
+Give me a developer briefing organized into these sections:
+
+## Progress
+What has been accomplished recently? Summarize recent commits, completed items,
+and any meaningful changes across repos. Highlight key wins.
+
+## Current Status
+Where do things stand right now? Cover uncommitted work, unpushed commits,
+branches in flight, stashes, and anything that needs attention (merge conflicts,
+repos behind remote, dirty state).
+
+## Next Steps
+What should I focus on next? Use open work-in-progress items, stale branches,
+and repo state to suggest concrete priorities. Explain why each matters.
 
 {context}
 """
