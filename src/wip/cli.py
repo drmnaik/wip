@@ -59,7 +59,7 @@ app = typer.Typer(
 config_app = typer.Typer(cls=AbbrevGroup, help="Manage wip configuration.")
 app.add_typer(config_app, name="config")
 
-ai_app = typer.Typer(cls=AbbrevGroup, help="AI-powered commands (requires LLM provider).")
+ai_app = typer.Typer(cls=AbbrevGroup, help="AI-powered commands: briefing, standup, ask.")
 app.add_typer(ai_app, name="ai")
 
 
