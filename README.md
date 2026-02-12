@@ -1,5 +1,7 @@
 # wip — Where did I leave off?
 
+![PyPI](https://img.shields.io/pypi/v/wip-cli) ![Python](https://img.shields.io/pypi/pyversions/wip-cli) ![License](https://img.shields.io/github/license/drmnaik/wip) ![Privacy](https://img.shields.io/badge/privacy-no_telemetry-green) ![Data](https://img.shields.io/badge/data-local_only_by_default-blue)
+
 A developer briefing tool. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
 
 ## Features
