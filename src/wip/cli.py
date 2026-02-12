@@ -21,7 +21,7 @@ from wip.worklist import (
 
 app = typer.Typer(
     name="wip",
-    help="Where did I leave off? A morning briefing for developers.",
+    help="Where did I leave off? A developer briefing tool.",
     no_args_is_help=False,
 )
 
@@ -38,7 +38,7 @@ def main(
     output_json: bool = typer.Option(False, "--json", help="Output as JSON."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full detail."),
 ):
-    """Show your morning briefing."""
+    """Show your briefing."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -175,7 +175,7 @@ def config_show():
 
 @ai_app.command("briefing")
 def ai_briefing():
-    """AI-powered narrative morning briefing."""
+    """AI-powered narrative briefing."""
     provider = _get_llm_provider()
     repos, wip_items = _scan_all()
 

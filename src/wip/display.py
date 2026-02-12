@@ -21,7 +21,7 @@ def render_briefing(
     wip_items: list[WorkItem] | None = None,
     repo_items: dict[str, list[WorkItem]] | None = None,
 ) -> None:
-    """Render the morning briefing to the terminal."""
+    """Render the briefing to the terminal."""
     if wip_items is None:
         wip_items = []
     if repo_items is None:

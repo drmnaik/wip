@@ -1,6 +1,6 @@
 # wip — Where did I leave off?
 
-A morning briefing for developers. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
+A developer briefing tool. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
 
 ## Features
 
@@ -38,7 +38,7 @@ pip install anthropic
 # First-time setup (interactive)
 wip config init
 
-# Show your morning briefing
+# Show your briefing
 wip
 
 # Verbose mode with full details
@@ -110,7 +110,7 @@ wip list --all                             # Show all items including completed
 Requires an LLM provider configured in `~/.wip/config.toml` and the corresponding API key set as an environment variable.
 
 ```bash
-wip ai briefing                 # Narrative morning briefing
+wip ai briefing                 # Narrative briefing
 wip ai standup                  # Generate a standup update from git activity
 wip ai ask "what was I working on yesterday?"
 wip ai ask "anything I forgot to push?"
@@ -154,7 +154,7 @@ api-gateway (main) ↓
 ### AI briefing (`wip ai briefing`)
 
 ```
-## Morning Briefing
+## Briefing
 
 You were deep in a token refresh bug in auth-service yesterday evening.
 You changed the retry logic in 3 files but stashed something — probably

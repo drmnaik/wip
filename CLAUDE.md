@@ -4,7 +4,7 @@
 
 ## Quick reference
 
-- **What:** CLI morning briefing tool for developers — scans git repos, shows status, tracks work-in-progress items
+- **What:** CLI developer briefing tool — scans git repos, shows status, tracks work-in-progress items
 - **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic SDK (LLM)
 - **Build:** Hatchling, src-layout (`src/wip/`), entry point `wip = "wip.cli:app"`
 - **Config:** `~/.wip/config.toml`
@@ -68,7 +68,7 @@ wip add "description"     # Add WIP item (auto-links to current repo)
 wip done <id>             # Mark item as done
 wip list                  # Show open items
 wip list --all            # Include completed items
-wip ai briefing           # AI narrative morning briefing
+wip ai briefing           # AI narrative briefing
 wip ai standup            # Generate standup update
 wip ai ask "question"     # Ask about your work
 ```

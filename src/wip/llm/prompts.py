@@ -7,7 +7,7 @@ from wip.worklist import WorkItem
 
 
 SYSTEM_PROMPT = """\
-You are wip, a developer assistant that gives concise morning briefings.
+You are wip, a developer assistant that gives concise briefings.
 You analyze git repository state and work-in-progress items to help developers
 understand where they left off and what to focus on next.
 
@@ -20,7 +20,7 @@ Rules:
 
 BRIEFING_TEMPLATE = """\
 Here is the current state of my repositories and work items.
-Give me a morning briefing — what should I know, and what should I focus on first?
+Give me a briefing — what should I know, and what should I focus on first?
 
 {context}
 """
@@ -73,7 +73,7 @@ def build_briefing_prompt(
     repos: list[RepoStatus],
     wip_items: list[WorkItem] | None = None,
 ) -> tuple[str, str]:
-    """Return (system_prompt, user_prompt) for a morning briefing."""
+    """Return (system_prompt, user_prompt) for a briefing."""
     context = build_context(repos, wip_items)
     return SYSTEM_PROMPT, BRIEFING_TEMPLATE.format(context=context)
 

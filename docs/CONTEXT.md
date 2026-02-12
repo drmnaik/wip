@@ -6,7 +6,7 @@
 
 ## 1. What is wip?
 
-**wip** ("Where did I leave off?") is a CLI tool that gives developers a morning briefing. It scans local git repositories and surfaces what you were working on: dirty files, stashes, branches, recent commits, and sync status with remotes. It also includes a work-in-progress task tracker for jotting down what you're doing across repos.
+**wip** ("Where did I leave off?") is a CLI developer briefing tool. It scans local git repositories and surfaces what you were working on: dirty files, stashes, branches, recent commits, and sync status with remotes. It also includes a work-in-progress task tracker for jotting down what you're doing across repos.
 
 **Core value proposition:** Run `wip` in your terminal and instantly know where you left off across all your projects.
 
@@ -14,7 +14,7 @@
 
 | Command             | Purpose                                        |
 |---------------------|-------------------------------------------------|
-| `wip`               | Show morning briefing (default, no subcommand)  |
+| `wip`               | Show briefing (default, no subcommand)           |
 | `wip scan`          | Explicit alias for the briefing                 |
 | `wip config init`   | Interactive setup (directories, author name)     |
 | `wip config show`   | Print current configuration                      |
@@ -26,7 +26,7 @@
 | `wip done <id>`     | Mark a WIP item as done                          |
 | `wip list`          | Show open WIP items                              |
 | `wip list --all`    | Show all WIP items including completed           |
-| `wip ai briefing`   | AI-powered narrative morning briefing            |
+| `wip ai briefing`   | AI-powered narrative briefing                    |
 | `wip ai standup`    | Generate a standup update from git activity      |
 | `wip ai ask "..."`  | Ask a free-form question about your work         |
 
@@ -429,7 +429,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Prompt assembly (`llm/prompts.py`) — builds structured context from scan data + work items
 - Anthropic Claude provider (`llm/anthropic.py`) — fully implemented with streaming
 - OpenAI and Gemini providers — scaffolded with stubs
-- `wip ai briefing` — narrative morning briefing via LLM
+- `wip ai briefing` — narrative briefing via LLM
 - `wip ai standup` — generate standup update from git activity
 - `wip ai ask "..."` — free-form questions about your work
 - Config extended with `[llm]` section (provider, model, api_key_env)
