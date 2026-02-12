@@ -130,6 +130,12 @@ def _render_repo(
 
     console.print(f"  {' · '.join(parts)}", style="dim")
 
+    # Stash descriptions (verbose only)
+    if verbose and repo.stash_entries:
+        console.print("  stashes:", style="dim")
+        for entry in repo.stash_entries:
+            console.print(f"    {entry}", style="dim")
+
     # Ahead/behind
     if repo.ahead > 0 or repo.behind > 0:
         ab_text = Text("  ")
@@ -140,6 +146,22 @@ def _render_repo(
         if tracking:
             ab_text.append(f" {tracking}", style="dim")
         console.print(ab_text)
+
+    # Changed files (verbose only)
+    if verbose and repo.changed_files:
+        console.print("  changes:", style="dim")
+        for f in repo.changed_files:
+            line = Text("    ")
+            if f.stage == "staged":
+                line.append(f.path, style="green")
+            elif f.stage == "untracked":
+                line.append(f.path, style="yellow")
+            else:
+                line.append(f.path, style="dim")
+            line.append(f" ({f.status})", style="dim")
+            if f.insertions or f.deletions:
+                line.append(f" +{f.insertions}/-{f.deletions}", style="dim")
+            console.print(line)
 
     # Agent sessions
     if repo.agent_sessions:

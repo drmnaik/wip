@@ -114,6 +114,21 @@ def _format_repo(repo: RepoStatus) -> str:
         parts.append(f"last commit {repo.last_commit_ago}")
     lines.append("Status: " + ", ".join(parts))
 
+    # Changed files
+    if repo.changed_files:
+        lines.append("Changed files:")
+        for f in repo.changed_files:
+            stat = ""
+            if f.insertions or f.deletions:
+                stat = f" (+{f.insertions}/-{f.deletions})"
+            lines.append(f"  - [{f.stage}] {f.path} ({f.status}){stat}")
+
+    # Stashes
+    if repo.stash_entries:
+        lines.append("Stashes:")
+        for entry in repo.stash_entries:
+            lines.append(f"  - {entry}")
+
     # Ahead/behind
     if repo.ahead > 0 or repo.behind > 0:
         lines.append(f"Remote: {repo.ahead} ahead, {repo.behind} behind")
@@ -128,6 +143,18 @@ def _format_repo(repo: RepoStatus) -> str:
         lines.append("Recent commits:")
         for c in repo.recent_commits[:5]:
             lines.append(f"  - {c.sha} {c.message} ({c.ago})")
+            # Body: cap at 3 lines
+            if c.body:
+                body_lines = c.body.split("\n")[:3]
+                for bl in body_lines:
+                    lines.append(f"      {bl}")
+            # Files: cap at 10 with "+N more" suffix
+            if c.files:
+                shown = c.files[:10]
+                file_str = ", ".join(shown)
+                if len(c.files) > 10:
+                    file_str += f" +{len(c.files) - 10} more"
+                lines.append(f"      files: {file_str}")
 
     # Agent activity
     if repo.agent_sessions:

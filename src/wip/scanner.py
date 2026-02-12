@@ -30,6 +30,8 @@ class CommitInfo:
     message: str
     ago: str
     timestamp: float
+    body: str = ""
+    files: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -37,6 +39,15 @@ class BranchInfo:
     name: str
     last_commit_ago: str
     timestamp: float
+
+
+@dataclass
+class FileChange:
+    path: str
+    status: str    # "modified", "added", "deleted", "renamed", "untracked"
+    stage: str     # "unstaged", "staged", "untracked"
+    insertions: int = 0
+    deletions: int = 0
 
 
 @dataclass
@@ -54,6 +65,8 @@ class RepoStatus:
     recent_branches: list[BranchInfo] = field(default_factory=list)
     recent_commits: list[CommitInfo] = field(default_factory=list)
     agent_sessions: list[AgentSession] = field(default_factory=list)
+    changed_files: list[FileChange] = field(default_factory=list)
+    stash_entries: list[str] = field(default_factory=list)
 
 
 def scan_repo(
@@ -82,8 +95,11 @@ def scan_repo(
     staged = len(repo.index.diff("HEAD")) if repo.head.is_valid() else 0
     dirty = len(repo.index.diff(None))  # unstaged changes
 
-    # Stash count
-    stash_count = _count_stashes(repo)
+    # Stash count + descriptions
+    stash_count, stash_entries = _collect_stashes(repo)
+
+    # Changed files (with diff stats)
+    changed_files = _collect_changed_files(repo)
 
     # Ahead / behind
     ahead, behind = _ahead_behind(repo)
@@ -121,6 +137,8 @@ def scan_repo(
         recent_branches=recent_branches,
         recent_commits=recent_commits,
         agent_sessions=agent_sessions,
+        changed_files=changed_files,
+        stash_entries=stash_entries,
     )
 
 
@@ -139,11 +157,88 @@ def scan_repos(
     return results
 
 
-def _count_stashes(repo: Repo) -> int:
+def _collect_stashes(repo: Repo) -> tuple[int, list[str]]:
+    """Return (count, descriptions) for stash entries."""
     try:
-        return len(repo.git.stash("list").splitlines()) if repo.git.stash("list") else 0
+        output = repo.git.stash("list")
+        if not output:
+            return 0, []
+        lines = output.splitlines()
+        return len(lines), lines
     except GitCommandError:
-        return 0
+        return 0, []
+
+
+def _parse_numstat(numstat_output: str) -> dict[str, tuple[int, int]]:
+    """Parse `git diff --numstat` output into {path: (insertions, deletions)}."""
+    result: dict[str, tuple[int, int]] = {}
+    for line in numstat_output.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("\t", 2)
+        if len(parts) < 3:
+            continue
+        ins_str, del_str, path = parts
+        # Binary files show "-" for insertions/deletions
+        ins = int(ins_str) if ins_str != "-" else 0
+        dels = int(del_str) if del_str != "-" else 0
+        result[path] = (ins, dels)
+    return result
+
+
+def _collect_changed_files(repo: Repo) -> list[FileChange]:
+    """Collect unstaged, staged, and untracked files with diff stats."""
+    files: list[FileChange] = []
+
+    if not repo.head.is_valid():
+        # No commits yet — everything is untracked or staged for initial commit
+        for path in repo.untracked_files:
+            files.append(FileChange(path=path, status="untracked", stage="untracked"))
+        return files
+
+    # --- Unstaged changes ---
+    try:
+        unstaged_numstat = _parse_numstat(repo.git.diff("--numstat"))
+    except GitCommandError:
+        unstaged_numstat = {}
+
+    _STATUS_MAP = {"M": "modified", "A": "added", "D": "deleted", "R": "renamed"}
+
+    try:
+        for diff_item in repo.index.diff(None):
+            path = diff_item.b_path or diff_item.a_path
+            status = _STATUS_MAP.get(diff_item.change_type, "modified")
+            ins, dels = unstaged_numstat.get(path, (0, 0))
+            files.append(FileChange(
+                path=path, status=status, stage="unstaged",
+                insertions=ins, deletions=dels,
+            ))
+    except GitCommandError:
+        pass
+
+    # --- Staged changes ---
+    try:
+        staged_numstat = _parse_numstat(repo.git.diff("--cached", "--numstat"))
+    except GitCommandError:
+        staged_numstat = {}
+
+    try:
+        for diff_item in repo.index.diff("HEAD"):
+            path = diff_item.b_path or diff_item.a_path
+            status = _STATUS_MAP.get(diff_item.change_type, "modified")
+            ins, dels = staged_numstat.get(path, (0, 0))
+            files.append(FileChange(
+                path=path, status=status, stage="staged",
+                insertions=ins, deletions=dels,
+            ))
+    except GitCommandError:
+        pass
+
+    # --- Untracked files ---
+    for path in repo.untracked_files:
+        files.append(FileChange(path=path, status="untracked", stage="untracked"))
+
+    return files
 
 
 def _ahead_behind(repo: Repo) -> tuple[int, int]:
@@ -201,11 +296,25 @@ def _recent_commits(repo: Repo, author: str, now: datetime) -> list[CommitInfo]:
             if author and author.lower() not in commit.author.name.lower():
                 continue
             ts = datetime.fromtimestamp(commit.committed_date, tz=timezone.utc)
+
+            # Extract body (lines after the first, stripped)
+            msg_lines = commit.message.strip().split("\n")
+            first_line = msg_lines[0]
+            body = "\n".join(msg_lines[1:]).strip()
+
+            # Collect changed file paths (capped at 20)
+            try:
+                commit_files = list(commit.stats.files.keys())[:20]
+            except Exception:
+                commit_files = []
+
             commits.append(CommitInfo(
                 sha=commit.hexsha[:7],
-                message=commit.message.strip().split("\n")[0],
+                message=first_line,
                 ago=_time_ago(now, ts),
                 timestamp=commit.committed_date,
+                body=body,
+                files=commit_files,
             ))
     except Exception:
         pass
