@@ -15,7 +15,7 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 - 📂 **Enriched file-level context** — changed files with diff stats, stash descriptions, commit bodies and file lists in LLM prompts and verbose output
 - 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
 - 🧭 **Context-aware git help** — ask how to untangle branches, recover stashes, or fix mistakes — the AI sees your actual repo state
-- 🔌 **Provider abstraction** — Anthropic (implemented), OpenAI, Gemini (stubs ready)
+- 🔌 **Provider abstraction** — Anthropic and OpenAI implemented, Gemini stub ready
 
 ## Installation
 
@@ -196,7 +196,7 @@ python -m wip.cli
 - `wip add/done/list` commands with repo linking and persistent state
 
 **Phase 4: LLM Integration** ✅
-- Provider abstraction (Anthropic implemented, OpenAI/Gemini stubs)
+- Provider abstraction (Anthropic and OpenAI implemented, Gemini stub)
 - `wip ai briefing`, `wip ai standup`, `wip ai ask` with streaming
 - Prompt assembly from scan data, config-driven provider/model selection
 
