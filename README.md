@@ -213,6 +213,11 @@ python -m wip.cli
 
 Ideas and contributions welcome — see `docs/CONTEXT.md` for architecture details.
 
+## Contact
+
+- **LinkedIn:** [Mahesh Naik](https://www.linkedin.com/in/kamaheshnaik/)
+- **Issues:** [GitHub Issues](https://github.com/drmnaik/wip/issues)
+
 ## License
 
 MIT

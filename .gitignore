@@ -25,3 +25,11 @@ Thumbs.db
 # Project
 *.db
 .wip/
+
+# Testing / linting
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/

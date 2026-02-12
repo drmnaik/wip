@@ -3,12 +3,33 @@ name = "wip-cli"
 version = "0.1.0"
 description = "Where did I leave off? A developer briefing tool."
 requires-python = ">=3.9"
+authors = [{name = "Mahesh Naik"}]
+license = {text = "MIT"}
+readme = "README.md"
+keywords = ["git", "developer-tools", "cli", "briefing", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Version Control :: Git",
+]
 dependencies = [
     "typer>=0.9.0",
     "gitpython>=3.1.0",
     "rich>=13.0.0",
     "tomli>=1.0.0; python_version < '3.11'",
 ]
+
+[project.urls]
+Homepage = "https://github.com/drmnaik/wip"
+Repository = "https://github.com/drmnaik/wip"
+Issues = "https://github.com/drmnaik/wip/issues"
 
 [project.scripts]
 wip = "wip.cli:app"
