@@ -141,6 +141,12 @@ def _render_repo(
             ab_text.append(f" {tracking}", style="dim")
         console.print(ab_text)
 
+    # Agent sessions
+    if repo.agent_sessions:
+        console.print("  agents:", style="dim")
+        for session in repo.agent_sessions:
+            _render_agent_session(session)
+
     # WIP items for this repo
     if wip_items:
         console.print("  wip:", style="dim")
@@ -166,6 +172,30 @@ def _render_repo(
             console.print(f"    {c.sha} {msg} ({c.ago})", style="dim")
 
     console.print()
+
+
+def _render_agent_session(session) -> None:
+    """Render a single agent session line with status styling."""
+    status_styles = {
+        "active": ("green", "active"),
+        "recent": ("yellow", "recent"),
+        "stale": ("red", "stale"),
+    }
+    style, label = status_styles.get(session.status, ("dim", session.status))
+
+    # Icon per status
+    status_icons = {"active": "●", "recent": "◐", "stale": "○"}
+    icon = status_icons.get(session.status, "○")
+
+    line = Text("    ")
+    line.append(f"{session.agent}", style="bold")
+    line.append(f" on {session.branch}", style="dim")
+    line.append(f" — {session.commit_count} commit{'s' if session.commit_count != 1 else ''}")
+    line.append(f", {session.files_changed} file{'s' if session.files_changed != 1 else ''}")
+    line.append(f" ({session.last_commit_ago})", style="dim")
+    line.append(f" {icon} ", style=style)
+    line.append(label, style=style)
+    console.print(line)
 
 
 def _tracking_name(repo: RepoStatus) -> str:

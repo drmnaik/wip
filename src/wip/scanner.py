@@ -8,6 +8,21 @@ from pathlib import Path
 
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 
+from wip.config import AgentsConfig
+
+
+@dataclass
+class AgentSession:
+    agent: str                 # Inferred agent name (e.g. "claude", "copilot")
+    branch: str                # Branch the agent worked on
+    commit_count: int          # Number of commits in this session
+    files_changed: int         # Total files touched (from diff stats)
+    first_commit_ago: str      # Human-readable time of first commit
+    last_commit_ago: str       # Human-readable time of last commit
+    first_commit_ts: float     # For sorting
+    last_commit_ts: float      # For recency checks
+    status: str                # "active" (<1h), "recent" (<24h), "stale" (>24h)
+
 
 @dataclass
 class CommitInfo:
@@ -38,9 +53,15 @@ class RepoStatus:
     last_commit_ago: str
     recent_branches: list[BranchInfo] = field(default_factory=list)
     recent_commits: list[CommitInfo] = field(default_factory=list)
+    agent_sessions: list[AgentSession] = field(default_factory=list)
 
 
-def scan_repo(repo_path: str, author: str = "", recent_days: int = 14) -> RepoStatus | None:
+def scan_repo(
+    repo_path: str,
+    author: str = "",
+    recent_days: int = 14,
+    agents_config: AgentsConfig | None = None,
+) -> RepoStatus | None:
     """Scan a single git repo and return its status, or None on error."""
     try:
         repo = Repo(repo_path)
@@ -81,6 +102,11 @@ def scan_repo(repo_path: str, author: str = "", recent_days: int = 14) -> RepoSt
     # Recent commits by author (last 24h)
     recent_commits = _recent_commits(repo, author, now)
 
+    # Agent session detection
+    if agents_config is None:
+        agents_config = AgentsConfig()
+    agent_sessions = _detect_agent_sessions(repo, agents_config, now)
+
     return RepoStatus(
         path=repo_path,
         name=name,
@@ -94,16 +120,20 @@ def scan_repo(repo_path: str, author: str = "", recent_days: int = 14) -> RepoSt
         last_commit_ago=last_commit_ago,
         recent_branches=recent_branches,
         recent_commits=recent_commits,
+        agent_sessions=agent_sessions,
     )
 
 
 def scan_repos(
-    repo_paths: list[str], author: str = "", recent_days: int = 14
+    repo_paths: list[str],
+    author: str = "",
+    recent_days: int = 14,
+    agents_config: AgentsConfig | None = None,
 ) -> list[RepoStatus]:
     """Scan multiple repos and return their statuses."""
     results = []
     for path in repo_paths:
-        status = scan_repo(path, author, recent_days)
+        status = scan_repo(path, author, recent_days, agents_config)
         if status is not None:
             results.append(status)
     return results
@@ -181,6 +211,102 @@ def _recent_commits(repo: Repo, author: str, now: datetime) -> list[CommitInfo]:
         pass
 
     return commits
+
+
+def _detect_agent_sessions(
+    repo: Repo, agents_config: AgentsConfig, now: datetime
+) -> list[AgentSession]:
+    """Detect agent activity across all local branches."""
+    # Map: (agent, branch) -> list of (commit_ts, files_changed)
+    sessions_map: dict[tuple[str, str], list[tuple[float, int]]] = {}
+
+    for ref in repo.branches:
+        branch_name = ref.name
+
+        # Check if branch name matches any agent pattern
+        branch_agent = _match_branch_agent(branch_name, agents_config.branch_patterns)
+
+        try:
+            for commit in repo.iter_commits(ref, max_count=100):
+                # Check author against agent patterns
+                author_agent = _match_author_agent(
+                    commit.author.name, agents_config.authors
+                )
+
+                agent = author_agent or branch_agent
+                if not agent:
+                    # On non-agent branches, stop at first non-agent commit
+                    if not branch_agent:
+                        continue
+                    break
+
+                key = (agent, branch_name)
+                try:
+                    files = commit.stats.total.get("files", 0)
+                except Exception:
+                    files = 0
+
+                if key not in sessions_map:
+                    sessions_map[key] = []
+                sessions_map[key].append((float(commit.committed_date), files))
+        except Exception:
+            continue
+
+    # Build AgentSession objects
+    sessions: list[AgentSession] = []
+    for (agent, branch), commit_data in sessions_map.items():
+        if not commit_data:
+            continue
+
+        timestamps = [ts for ts, _ in commit_data]
+        first_ts = min(timestamps)
+        last_ts = max(timestamps)
+        total_files = sum(fc for _, fc in commit_data)
+
+        first_dt = datetime.fromtimestamp(first_ts, tz=timezone.utc)
+        last_dt = datetime.fromtimestamp(last_ts, tz=timezone.utc)
+
+        hours_since_last = (now - last_dt).total_seconds() / 3600
+        if hours_since_last < 1:
+            status = "active"
+        elif hours_since_last < 24:
+            status = "recent"
+        else:
+            status = "stale"
+
+        sessions.append(AgentSession(
+            agent=agent,
+            branch=branch,
+            commit_count=len(commit_data),
+            files_changed=total_files,
+            first_commit_ago=_time_ago(now, first_dt),
+            last_commit_ago=_time_ago(now, last_dt),
+            first_commit_ts=first_ts,
+            last_commit_ts=last_ts,
+            status=status,
+        ))
+
+    # Sort by most recent first
+    sessions.sort(key=lambda s: s.last_commit_ts, reverse=True)
+    return sessions
+
+
+def _match_author_agent(author_name: str, patterns: list[str]) -> str:
+    """Return the matched agent name if author matches any pattern, else empty string."""
+    author_lower = author_name.lower()
+    for pattern in patterns:
+        if pattern.lower() in author_lower:
+            return pattern.lower().rstrip("-")
+    return ""
+
+
+def _match_branch_agent(branch_name: str, branch_patterns: list[str]) -> str:
+    """Return the inferred agent name if branch matches any prefix pattern, else empty string."""
+    for pattern in branch_patterns:
+        if branch_name.startswith(pattern):
+            # Agent name is the prefix without trailing slash
+            return pattern.rstrip("/")
+    return ""
 
 
 def _time_ago(now: datetime, then: datetime) -> str:

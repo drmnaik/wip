@@ -28,6 +28,17 @@ DEFAULTS = {
 
 
 @dataclass
+class AgentsConfig:
+    authors: list[str] = field(default_factory=lambda: [
+        "claude", "copilot", "cursor", "devin", "codex",
+        "github-actions", "bot",
+    ])
+    branch_patterns: list[str] = field(default_factory=lambda: [
+        "agent/", "claude/", "copilot/", "devin/", "cursor/",
+    ])
+
+
+@dataclass
 class LLMConfig:
     provider: str = ""       # "anthropic", "openai", "gemini"
     model: str = ""          # provider-specific model ID (uses provider default if empty)
@@ -41,6 +52,7 @@ class WipConfig:
     scan_depth: int = 3
     recent_days: int = 14
     llm: LLMConfig = field(default_factory=LLMConfig)
+    agents: AgentsConfig = field(default_factory=AgentsConfig)
 
 
 def load_config() -> WipConfig:
@@ -58,12 +70,20 @@ def load_config() -> WipConfig:
         api_key_env=llm_data.get("api_key_env", ""),
     )
 
+    agents_data = data.get("agents", {})
+    agents_defaults = AgentsConfig()
+    agents_config = AgentsConfig(
+        authors=agents_data.get("authors", agents_defaults.authors),
+        branch_patterns=agents_data.get("branch_patterns", agents_defaults.branch_patterns),
+    )
+
     return WipConfig(
         directories=data.get("directories", []),
         author=data.get("author", ""),
         scan_depth=data.get("scan_depth", 3),
         recent_days=data.get("recent_days", 14),
         llm=llm_config,
+        agents=agents_config,
     )
 
 
@@ -88,6 +108,16 @@ def save_config(config: WipConfig) -> None:
             lines.append(f'model = "{config.llm.model}"')
         if config.llm.api_key_env:
             lines.append(f'api_key_env = "{config.llm.api_key_env}"')
+
+    # Agents section (only if non-default)
+    defaults = AgentsConfig()
+    if config.agents.authors != defaults.authors or config.agents.branch_patterns != defaults.branch_patterns:
+        lines.append("")
+        lines.append("[agents]")
+        author_items = ", ".join(f'"{a}"' for a in config.agents.authors)
+        lines.append(f"authors = [{author_items}]")
+        pattern_items = ", ".join(f'"{p}"' for p in config.agents.branch_patterns)
+        lines.append(f"branch_patterns = [{pattern_items}]")
 
     CONFIG_PATH.write_text("\n".join(lines) + "\n")
 

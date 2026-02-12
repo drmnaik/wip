@@ -129,5 +129,14 @@ def _format_repo(repo: RepoStatus) -> str:
         for c in repo.recent_commits[:5]:
             lines.append(f"  - {c.sha} {c.message} ({c.ago})")
 
+    # Agent activity
+    if repo.agent_sessions:
+        lines.append("Agent activity:")
+        for s in repo.agent_sessions:
+            lines.append(
+                f"  - {s.agent} on {s.branch}: {s.commit_count} commits, "
+                f"{s.files_changed} files changed, last commit {s.last_commit_ago} ({s.status})"
+            )
+
     lines.append("")
     return "\n".join(lines)

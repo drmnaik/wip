@@ -253,7 +253,7 @@ def _scan_all():
         raise typer.Exit(1)
 
     repo_paths = discover_repos(config.directories, config.scan_depth)
-    repos = scan_repos(repo_paths, config.author, config.recent_days)
+    repos = scan_repos(repo_paths, config.author, config.recent_days, config.agents)
     wip_items = get_items()
     return repos, wip_items
 
@@ -271,7 +271,7 @@ def _run_briefing(output_json: bool = False, verbose: bool = False) -> None:
         typer.echo("No git repos found in configured directories.")
         raise typer.Exit(0)
 
-    results = scan_repos(repo_paths, config.author, config.recent_days)
+    results = scan_repos(repo_paths, config.author, config.recent_days, config.agents)
 
     wip_items = get_items()
 
