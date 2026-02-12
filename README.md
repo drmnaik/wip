@@ -4,6 +4,10 @@
 
 A developer briefing tool. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
 
+## Demo
+
+https://github.com/drmnaik/wip/raw/main/assets/wip-demo.mov
+
 ## Features
 
 - 🔍 **Auto-discover** git repos in configured directories
