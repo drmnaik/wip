@@ -1,6 +1,6 @@
 [project]
 name = "wip-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "Where did I leave off? A developer briefing tool."
 requires-python = ">=3.9"
 authors = [{name = "Mahesh Naik"}]
