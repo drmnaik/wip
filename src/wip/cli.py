@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import typer
+from typer.core import TyperGroup
 
 from wip.config import WipConfig, LLMConfig, load_config, save_config, detect_git_author, CONFIG_PATH
 from wip.discovery import discover_repos
@@ -19,16 +20,46 @@ from wip.worklist import (
     get_items_for_repo,
 )
 
+class AbbrevGroup(TyperGroup):
+    """Auto-resolve unambiguous prefix and fuzzy command matches."""
+
+    def resolve_command(self, ctx, args):
+        cmd_name = args[0]
+        # Exact match — use default behavior.
+        if self.get_command(ctx, cmd_name) is not None:
+            return super().resolve_command(ctx, args)
+
+        commands = self.list_commands(ctx)
+
+        # Try prefix match (unique only).
+        prefix_matches = [c for c in commands if c.startswith(cmd_name)]
+        if len(prefix_matches) == 1:
+            args = [prefix_matches[0]] + args[1:]
+            return super().resolve_command(ctx, args)
+
+        # Try fuzzy match (single match only, no prefix ambiguity).
+        if not prefix_matches:
+            from difflib import get_close_matches
+            fuzzy = get_close_matches(cmd_name, commands, n=1, cutoff=0.6)
+            if len(fuzzy) == 1:
+                args = [fuzzy[0]] + args[1:]
+                return super().resolve_command(ctx, args)
+
+        # Ambiguous or no match — fall through to default error + suggestion.
+        return super().resolve_command(ctx, args)
+
+
 app = typer.Typer(
+    cls=AbbrevGroup,
     name="wip",
     help="Where did I leave off? A developer briefing tool.",
     no_args_is_help=False,
 )
 
-config_app = typer.Typer(help="Manage wip configuration.")
+config_app = typer.Typer(cls=AbbrevGroup, help="Manage wip configuration.")
 app.add_typer(config_app, name="config")
 
-ai_app = typer.Typer(help="AI-powered commands (requires LLM provider).")
+ai_app = typer.Typer(cls=AbbrevGroup, help="AI-powered commands (requires LLM provider).")
 app.add_typer(ai_app, name="ai")
 
 
