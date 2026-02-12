@@ -279,11 +279,9 @@ def _scan_all():
     """Run the full scan pipeline and return (repos, wip_items)."""
     config = load_config()
 
-    if not config.directories:
-        typer.echo("No directories configured. Run `wip config init` to get started.")
-        raise typer.Exit(1)
+    directories = config.directories or [os.getcwd()]
 
-    repo_paths = discover_repos(config.directories, config.scan_depth)
+    repo_paths = discover_repos(directories, config.scan_depth)
     repos = scan_repos(repo_paths, config.author, config.recent_days, config.agents)
     wip_items = get_items()
     return repos, wip_items
@@ -292,11 +290,9 @@ def _scan_all():
 def _run_briefing(output_json: bool = False, verbose: bool = False) -> None:
     config = load_config()
 
-    if not config.directories:
-        typer.echo("No directories configured. Run `wip config init` to get started.")
-        raise typer.Exit(1)
+    directories = config.directories or [os.getcwd()]
 
-    repo_paths = discover_repos(config.directories, config.scan_depth)
+    repo_paths = discover_repos(directories, config.scan_depth)
 
     if not repo_paths:
         typer.echo("No git repos found in configured directories.")
