@@ -18,11 +18,8 @@ cd wip
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install in editable mode
+# Install in editable mode (includes all dependencies)
 pip install -e .
-
-# Optional: AI features
-pip install anthropic
 ```
 
 ## Code Conventions

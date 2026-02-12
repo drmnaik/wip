@@ -24,11 +24,8 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 git clone git@github.com:drmnaik/wip.git
 cd wip
 
-# Install in editable mode
+# Install in editable mode (includes all dependencies)
 pip install -e .
-
-# Optional: install Anthropic SDK for AI features
-pip install anthropic
 ```
 
 **Requirements:** Python 3.9+
@@ -185,9 +182,6 @@ then circle back to the frontend TODO.
 ```bash
 # Install dependencies
 pip install -e .
-
-# Optional: AI features
-pip install anthropic
 
 # Run from source
 python -m wip.cli

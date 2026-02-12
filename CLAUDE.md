@@ -58,7 +58,7 @@
 ## Commands
 
 ```bash
-pip install -e .          # Install in dev mode
+pip install -e .          # Install in dev mode (includes all deps)
 wip                       # Run briefing
 wip --json                # JSON output
 wip --verbose             # Full detail

@@ -278,7 +278,7 @@ All dependencies are declared in `pyproject.toml`.
 | `gitpython`  | `>=3.1.0` | Git repo interaction — branches, diffs, logs, stash, remotes without shelling out |
 | `rich`       | `>=13.0.0`| Terminal output — colors, styled text, JSON pretty-printing |
 | `tomli`      | `>=1.0.0` | TOML parsing on Python 3.9/3.10 (stdlib `tomllib` on 3.11+). Conditional: `python_version < '3.11'` |
-| `anthropic`  | `>=0.79.0`| Anthropic Claude API SDK. Optional — only needed if using `anthropic` LLM provider |
+| `anthropic`  | `>=0.79.0`| Anthropic Claude API SDK for AI-powered briefings, standup drafts, and natural language queries |
 
 ### Build system
 
@@ -578,7 +578,7 @@ wip --verbose
 - **`_tracking_name()` always returns "origin"** — should inspect the actual remote name
 - **No Windows testing** — paths and shell assumptions are macOS/Linux
 - **Only Anthropic provider implemented** — OpenAI and Gemini are stubs
-- **`anthropic` is not in pyproject.toml dependencies** — installed separately. Provider gives clean error if missing.
+- **`anthropic` is a required dependency** — installed automatically with `pip install -e .`
 - **LLM max_tokens is hardcoded to 1024** — should be configurable for longer responses
 - **No token budget management** — large repos with many commits could exceed context limits
 
