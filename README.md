@@ -14,6 +14,7 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 - 🕵️ **Agent detection** — passively detect coding agent activity (Claude, Copilot, Cursor, Devin) from git signals
 - 📂 **Enriched file-level context** — changed files with diff stats, stash descriptions, commit bodies and file lists in LLM prompts and verbose output
 - 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
+- 🧭 **Context-aware git help** — ask how to untangle branches, recover stashes, or fix mistakes — the AI sees your actual repo state
 - 🔌 **Provider abstraction** — Anthropic (implemented), OpenAI, Gemini (stubs ready)
 
 ## Installation
@@ -115,6 +116,11 @@ wip ai standup                  # Generate a standup update from git activity
 wip ai ask "what was I working on yesterday?"
 wip ai ask "anything I forgot to push?"
 wip ai ask "summarize my week"
+
+# Context-aware git help — the AI sees your actual branches, dirty files, and stashes
+wip ai ask "I have diverged branches, how do I cleanly get back to main?"
+wip ai ask "how do I recover what I stashed last week?"
+wip ai ask "what git commands do I need to untangle this mess?"
 ```
 
 ## Example Output
