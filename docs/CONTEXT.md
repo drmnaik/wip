@@ -60,7 +60,7 @@ wip/
             ├── prompts.py      # Prompt assembly from scan data
             ├── anthropic.py    # Anthropic Claude provider (implemented)
             ├── openai.py       # OpenAI GPT provider (implemented)
-            └── gemini.py       # Google Gemini provider (stub)
+            └── gemini.py       # Google Gemini provider (implemented)
 ```
 
 ### Data flow
@@ -129,7 +129,7 @@ cli.py: _get_llm_provider()
 | `llm/prompts.py` | Assembles scan data into LLM prompts         | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
 | `llm/anthropic.py`| Anthropic Claude provider (implemented)      | `AnthropicProvider` |
 | `llm/openai.py`  | OpenAI GPT provider (implemented)            | `OpenAIProvider` |
-| `llm/gemini.py`  | Google Gemini provider (stub)                | `GeminiProvider` |
+| `llm/gemini.py`  | Google Gemini provider (implemented)                | `GeminiProvider` |
 
 ---
 
@@ -280,6 +280,7 @@ All dependencies are declared in `pyproject.toml`.
 | `tomli`      | `>=1.0.0` | TOML parsing on Python 3.9/3.10 (stdlib `tomllib` on 3.11+). Conditional: `python_version < '3.11'` |
 | `anthropic`  | `>=0.79.0`| Anthropic Claude API SDK for AI-powered briefings, standup drafts, and natural language queries |
 | `openai`     | `>=1.0.0` | OpenAI GPT API SDK — alternative LLM provider for briefings, standup drafts, and queries |
+| `google-genai`| `>=1.0.0`| Google Gemini API SDK — alternative LLM provider for briefings, standup drafts, and queries |
 
 ### Build system
 
@@ -430,7 +431,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Prompt assembly (`llm/prompts.py`) — builds structured context from scan data + work items
 - Anthropic Claude provider (`llm/anthropic.py`) — fully implemented with streaming
 - OpenAI GPT provider (`llm/openai.py`) — fully implemented with streaming
-- Gemini provider — scaffolded with stub
+- Gemini provider (`llm/gemini.py`) — fully implemented with streaming
 - `wip ai briefing` — narrative briefing via LLM
 - `wip ai standup` — generate standup update from git activity
 - `wip ai ask "..."` — free-form questions about your work
@@ -579,7 +580,7 @@ wip --verbose
 - **TOML writing is manual** — works for the flat config structure but would need a library for nested configs
 - **`_tracking_name()` always returns "origin"** — should inspect the actual remote name
 - **No Windows testing** — paths and shell assumptions are macOS/Linux
-- **Gemini provider is a stub** — only Anthropic and OpenAI are implemented
+- **All three LLM providers implemented** — Anthropic, OpenAI, and Gemini
 - **`anthropic` is a required dependency** — installed automatically with `pip install -e .`
 - **LLM max_tokens is hardcoded to 1024** — should be configurable for longer responses
 - **No token budget management** — large repos with many commits could exceed context limits
@@ -631,4 +632,4 @@ Anthropic Claude provider. Lazy client creation. `complete()` returns `LLMRespon
 OpenAI GPT provider. Lazy client creation via `_get_client()`. `complete()` calls `chat.completions.create()` and returns `LLMResponse`. `stream()` yields text chunks via `stream=True`. Maps OpenAI exceptions to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `gpt-4o`.
 
 ### `src/wip/llm/gemini.py`
-Google Gemini provider stub. `complete()` and `stream()` raise `NotImplementedError` with TODO comments. Default model: `gemini-2.0-flash`.
+Google Gemini provider. Lazy client creation via `_get_client()`. `complete()` calls `client.models.generate_content()` and returns `LLMResponse`. `stream()` yields text chunks via `generate_content_stream()`. Maps `google.api_core.exceptions` to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `gemini-2.0-flash`.

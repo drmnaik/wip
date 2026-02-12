@@ -5,7 +5,7 @@
 ## Quick reference
 
 - **What:** CLI developer briefing tool — scans git repos, shows status, tracks work-in-progress items
-- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic/OpenAI SDK (LLM)
+- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic/OpenAI/Gemini SDK (LLM)
 - **Build:** Hatchling, src-layout (`src/wip/`), entry point `wip = "wip.cli:app"`
 - **Config:** `~/.wip/config.toml`
 - **Worklist:** `~/.wip/worklist.json`
@@ -36,7 +36,7 @@
 | `llm/prompts.py` | Prompt assembly from scan data       | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
 | `llm/anthropic.py`| Anthropic Claude (implemented)      | `AnthropicProvider` |
 | `llm/openai.py`  | OpenAI GPT (implemented)             | `OpenAIProvider` |
-| `llm/gemini.py`  | Google Gemini (stub)                 | `GeminiProvider` |
+| `llm/gemini.py`  | Google Gemini (implemented)          | `GeminiProvider` |
 
 ## How to extend
 
@@ -51,7 +51,7 @@
 
 ### LLM
 
-- **New provider:** Create `llm/<name>.py` extending `LLMProvider` → implement `complete()` + `stream()` → register in `llm/registry.py` PROVIDERS dict. Follow the pattern in `anthropic.py` or `openai.py`: lazy `_get_client()`, error mapping to `LLMAuthError`/`LLMRateLimitError`/`LLMError`, import guard for the SDK package.
+- **New provider:** Create `llm/<name>.py` extending `LLMProvider` → implement `complete()` + `stream()` → register in `llm/registry.py` PROVIDERS dict. Follow the pattern in `anthropic.py`, `openai.py`, or `gemini.py`: lazy `_get_client()`, error mapping to `LLMAuthError`/`LLMRateLimitError`/`LLMError`, import guard for the SDK package.
 - **New AI command:** Add `@ai_app.command()` in `cli.py` → use `_get_llm_provider()` + `_scan_all()` + `_llm_call()`
 - **New prompt type:** Add `build_*_prompt()` to `llm/prompts.py` returning `(system, user)` tuple
 
