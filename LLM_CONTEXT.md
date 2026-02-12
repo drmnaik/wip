@@ -1,11 +1,11 @@
-# CLAUDE.md — Agent instructions for wip
+# LLM_CONTEXT.md — Context for coding agents and bots
 
-> Read `docs/CONTEXT.md` for full project architecture, data models, and roadmap.
+> This file provides the context a coding agent or bot needs to understand and contribute to the `wip` project. For full architecture details, data models, and roadmap, see `docs/CONTEXT.md`.
 
 ## Quick reference
 
 - **What:** CLI developer briefing tool — scans git repos, shows status, tracks work-in-progress items
-- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic SDK (LLM)
+- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic/OpenAI SDK (LLM)
 - **Build:** Hatchling, src-layout (`src/wip/`), entry point `wip = "wip.cli:app"`
 - **Config:** `~/.wip/config.toml`
 - **Worklist:** `~/.wip/worklist.json`
@@ -23,20 +23,20 @@
 
 ## Module map
 
-| Module         | Does what                        | Key exports                                  |
-|----------------|----------------------------------|----------------------------------------------|
-| `cli.py`       | Commands, flags, orchestration   | `app`                                        |
-| `config.py`    | TOML config read/write           | `WipConfig`, `AgentsConfig`, `load_config()`, `save_config()`|
-| `discovery.py` | Find git repos on disk           | `discover_repos()`                           |
-| `scanner.py`   | Collect git status + agent detection | `RepoStatus`, `AgentSession`, `FileChange`, `scan_repo()`, `scan_repos()` |
-| `display.py`   | Rich terminal output             | `render_briefing()`, `render_json()`, `render_worklist()` |
-| `worklist.py`  | WIP task tracker, JSON persist   | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `detect_repo()` |
-| `llm/base.py`  | ABC, response type, errors       | `LLMProvider`, `LLMResponse`, `LLMError` |
-| `llm/registry.py`| Provider lookup, key resolution | `get_provider()`, `list_providers()` |
-| `llm/prompts.py` | Prompt assembly from scan data  | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
-| `llm/anthropic.py`| Anthropic Claude (implemented) | `AnthropicProvider` |
-| `llm/openai.py`  | OpenAI GPT (stub)              | `OpenAIProvider` |
-| `llm/gemini.py`  | Google Gemini (stub)           | `GeminiProvider` |
+| Module           | Does what                            | Key exports                                  |
+|------------------|--------------------------------------|----------------------------------------------|
+| `cli.py`         | Commands, flags, orchestration       | `app`                                        |
+| `config.py`      | TOML config read/write               | `WipConfig`, `AgentsConfig`, `load_config()`, `save_config()`|
+| `discovery.py`   | Find git repos on disk               | `discover_repos()`                           |
+| `scanner.py`     | Collect git status + agent detection | `RepoStatus`, `AgentSession`, `FileChange`, `scan_repo()`, `scan_repos()` |
+| `display.py`     | Rich terminal output                 | `render_briefing()`, `render_json()`, `render_worklist()` |
+| `worklist.py`    | WIP task tracker, JSON persist       | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `detect_repo()` |
+| `llm/base.py`    | ABC, response type, errors           | `LLMProvider`, `LLMResponse`, `LLMError` |
+| `llm/registry.py`| Provider lookup, key resolution      | `get_provider()`, `list_providers()` |
+| `llm/prompts.py` | Prompt assembly from scan data       | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
+| `llm/anthropic.py`| Anthropic Claude (implemented)      | `AnthropicProvider` |
+| `llm/openai.py`  | OpenAI GPT (implemented)             | `OpenAIProvider` |
+| `llm/gemini.py`  | Google Gemini (stub)                 | `GeminiProvider` |
 
 ## How to extend
 
@@ -44,14 +44,14 @@
 - **New config field:** Add to `WipConfig` with default → update `load_config()`/`save_config()` → optionally add prompt in `config_init()`
 - **New CLI command:** Add `@app.command()` in `cli.py` → delegate to relevant module
 
-## How to extend (worklist)
+### Worklist
 
 - **New worklist field:** Add to `WorkItem` dataclass → update `add_item()` → render in `_render_work_item()`
 - **New worklist command:** Add `@app.command()` in `cli.py` → delegate to `worklist.py`
 
-## How to extend (LLM)
+### LLM
 
-- **New provider:** Create `llm/<name>.py` extending `LLMProvider` → implement `complete()` + `stream()` → register in `llm/registry.py` PROVIDERS dict
+- **New provider:** Create `llm/<name>.py` extending `LLMProvider` → implement `complete()` + `stream()` → register in `llm/registry.py` PROVIDERS dict. Follow the pattern in `anthropic.py` or `openai.py`: lazy `_get_client()`, error mapping to `LLMAuthError`/`LLMRateLimitError`/`LLMError`, import guard for the SDK package.
 - **New AI command:** Add `@ai_app.command()` in `cli.py` → use `_get_llm_provider()` + `_scan_all()` + `_llm_call()`
 - **New prompt type:** Add `build_*_prompt()` to `llm/prompts.py` returning `(system, user)` tuple
 

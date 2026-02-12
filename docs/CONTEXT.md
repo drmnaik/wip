@@ -59,7 +59,7 @@ wip/
             ├── registry.py     # Provider name → class mapping, API key resolution
             ├── prompts.py      # Prompt assembly from scan data
             ├── anthropic.py    # Anthropic Claude provider (implemented)
-            ├── openai.py       # OpenAI GPT provider (stub)
+            ├── openai.py       # OpenAI GPT provider (implemented)
             └── gemini.py       # Google Gemini provider (stub)
 ```
 
@@ -128,7 +128,7 @@ cli.py: _get_llm_provider()
 | `llm/registry.py`| Provider lookup and API key resolution       | `get_provider()`, `list_providers()` |
 | `llm/prompts.py` | Assembles scan data into LLM prompts         | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
 | `llm/anthropic.py`| Anthropic Claude provider (implemented)      | `AnthropicProvider` |
-| `llm/openai.py`  | OpenAI GPT provider (stub)                   | `OpenAIProvider` |
+| `llm/openai.py`  | OpenAI GPT provider (implemented)            | `OpenAIProvider` |
 | `llm/gemini.py`  | Google Gemini provider (stub)                | `GeminiProvider` |
 
 ---
@@ -279,6 +279,7 @@ All dependencies are declared in `pyproject.toml`.
 | `rich`       | `>=13.0.0`| Terminal output — colors, styled text, JSON pretty-printing |
 | `tomli`      | `>=1.0.0` | TOML parsing on Python 3.9/3.10 (stdlib `tomllib` on 3.11+). Conditional: `python_version < '3.11'` |
 | `anthropic`  | `>=0.79.0`| Anthropic Claude API SDK for AI-powered briefings, standup drafts, and natural language queries |
+| `openai`     | `>=1.0.0` | OpenAI GPT API SDK — alternative LLM provider for briefings, standup drafts, and queries |
 
 ### Build system
 
@@ -428,7 +429,8 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Provider registry (`llm/registry.py`) with lazy imports and API key resolution from env vars
 - Prompt assembly (`llm/prompts.py`) — builds structured context from scan data + work items
 - Anthropic Claude provider (`llm/anthropic.py`) — fully implemented with streaming
-- OpenAI and Gemini providers — scaffolded with stubs
+- OpenAI GPT provider (`llm/openai.py`) — fully implemented with streaming
+- Gemini provider — scaffolded with stub
 - `wip ai briefing` — narrative briefing via LLM
 - `wip ai standup` — generate standup update from git activity
 - `wip ai ask "..."` — free-form questions about your work
@@ -577,7 +579,7 @@ wip --verbose
 - **TOML writing is manual** — works for the flat config structure but would need a library for nested configs
 - **`_tracking_name()` always returns "origin"** — should inspect the actual remote name
 - **No Windows testing** — paths and shell assumptions are macOS/Linux
-- **Only Anthropic provider implemented** — OpenAI and Gemini are stubs
+- **Gemini provider is a stub** — only Anthropic and OpenAI are implemented
 - **`anthropic` is a required dependency** — installed automatically with `pip install -e .`
 - **LLM max_tokens is hardcoded to 1024** — should be configurable for longer responses
 - **No token budget management** — large repos with many commits could exceed context limits
@@ -626,7 +628,7 @@ Builds `(system, user)` prompt pairs from scan data. `build_context()` formats r
 Anthropic Claude provider. Lazy client creation. `complete()` returns `LLMResponse`. `stream()` yields text chunks via `messages.stream()`. Maps Anthropic exceptions to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `claude-sonnet-4-5-20250929`.
 
 ### `src/wip/llm/openai.py`
-OpenAI GPT provider stub. `complete()` and `stream()` raise `NotImplementedError` with TODO comments. Default model: `gpt-4o`.
+OpenAI GPT provider. Lazy client creation via `_get_client()`. `complete()` calls `chat.completions.create()` and returns `LLMResponse`. `stream()` yields text chunks via `stream=True`. Maps OpenAI exceptions to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `gpt-4o`.
 
 ### `src/wip/llm/gemini.py`
 Google Gemini provider stub. `complete()` and `stream()` raise `NotImplementedError` with TODO comments. Default model: `gemini-2.0-flash`.
