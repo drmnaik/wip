@@ -3,35 +3,97 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import asdict
 
 from rich.console import Console
 from rich.text import Text
 
 from wip.scanner import RepoStatus
+from wip.worklist import WorkItem
 
 console = Console()
 
 
-def render_briefing(repos: list[RepoStatus], verbose: bool = False) -> None:
+def render_briefing(
+    repos: list[RepoStatus],
+    verbose: bool = False,
+    wip_items: list[WorkItem] | None = None,
+    repo_items: dict[str, list[WorkItem]] | None = None,
+) -> None:
     """Render the morning briefing to the terminal."""
+    if wip_items is None:
+        wip_items = []
+    if repo_items is None:
+        repo_items = {}
+
     count = len(repos)
     header = Text()
     header.append(" wip", style="bold cyan")
     header.append(f" — {count} repo{'s' if count != 1 else ''} scanned\n")
     console.print(header)
 
+    if wip_items:
+        render_worklist(wip_items, verbose)
+
     for repo in repos:
-        _render_repo(repo, verbose)
+        items_for_repo = repo_items.get(repo.path, [])
+        _render_repo(repo, verbose, wip_items=items_for_repo)
 
 
-def render_json(repos: list[RepoStatus]) -> None:
+def render_json(
+    repos: list[RepoStatus],
+    wip_items: list[WorkItem] | None = None,
+) -> None:
     """Output scan results as JSON."""
-    data = [asdict(r) for r in repos]
+    data = {
+        "repos": [asdict(r) for r in repos],
+        "worklist": [asdict(i) for i in (wip_items or [])],
+    }
     console.print_json(json.dumps(data))
 
 
-def _render_repo(repo: RepoStatus, verbose: bool) -> None:
+def render_worklist(items: list[WorkItem], verbose: bool = False) -> None:
+    """Render the worklist section before the repo list."""
+    count = len(items)
+    header = Text()
+    header.append(" work-in-progress", style="bold magenta")
+    header.append(f" — {count} item{'s' if count != 1 else ''}\n")
+    console.print(header)
+
+    for item in items:
+        _render_work_item(item, show_repo=True)
+
+    console.print()
+
+
+def _render_work_item(item: WorkItem, show_repo: bool = False) -> None:
+    """Render a single work item line."""
+    line = Text("  ")
+
+    if item.status == "done":
+        line.append(f"#{item.id}", style="dim strikethrough")
+        line.append("  ", style="dim")
+        line.append(item.description, style="dim strikethrough")
+    else:
+        line.append(f"#{item.id}", style="bold cyan")
+        line.append("  ")
+        line.append(item.description)
+
+    if show_repo and item.repo:
+        from pathlib import Path
+        repo_name = Path(item.repo).name
+        line.append(f" ({repo_name})", style="dim")
+
+    ago = _item_ago(item.created_at)
+    line.append(f" — {ago}", style="dim")
+
+    console.print(line)
+
+
+def _render_repo(
+    repo: RepoStatus, verbose: bool, wip_items: list[WorkItem] | None = None
+) -> None:
     is_dirty = repo.dirty_files > 0 or repo.untracked_files > 0 or repo.staged_files > 0
     is_behind = repo.behind > 0
 
@@ -79,6 +141,13 @@ def _render_repo(repo: RepoStatus, verbose: bool) -> None:
             ab_text.append(f" {tracking}", style="dim")
         console.print(ab_text)
 
+    # WIP items for this repo
+    if wip_items:
+        console.print("  wip:", style="dim")
+        for item in wip_items:
+            ago = _item_ago(item.created_at)
+            console.print(f"    #{item.id} {item.description} ({ago})", style="dim")
+
     # Recent branches
     if repo.recent_branches:
         if verbose:
@@ -107,3 +176,18 @@ def _truncate(text: str, length: int) -> str:
     if len(text) <= length:
         return text
     return text[: length - 1] + "…"
+
+
+def _item_ago(timestamp: float) -> str:
+    """Human-readable time ago for a unix timestamp."""
+    delta = int(time.time() - timestamp)
+    if delta < 60:
+        return "just now"
+    minutes = delta // 60
+    if minutes < 60:
+        return f"{minutes}m ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours}h ago"
+    days = hours // 24
+    return f"{days}d ago"
