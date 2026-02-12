@@ -6,7 +6,7 @@
 
 ## 1. What is wip?
 
-**wip** ("Where did I leave off?") is a CLI tool that gives developers a morning briefing. It scans local git repositories and surfaces what you were working on: dirty files, stashes, branches, recent commits, and sync status with remotes.
+**wip** ("Where did I leave off?") is a CLI tool that gives developers a morning briefing. It scans local git repositories and surfaces what you were working on: dirty files, stashes, branches, recent commits, and sync status with remotes. It also includes a work-in-progress task tracker for jotting down what you're doing across repos.
 
 **Core value proposition:** Run `wip` in your terminal and instantly know where you left off across all your projects.
 
@@ -21,6 +21,11 @@
 | `wip version`       | Print version string                             |
 | `wip --json`        | Output scan results as machine-readable JSON     |
 | `wip --verbose`     | Show all branches and full commit messages       |
+| `wip add "desc"`    | Add a WIP item (auto-links to current repo)      |
+| `wip add "desc" --repo /path` | Add a WIP item linked to a specific repo |
+| `wip done <id>`     | Mark a WIP item as done                          |
+| `wip list`          | Show open WIP items                              |
+| `wip list --all`    | Show all WIP items including completed           |
 
 ---
 
@@ -43,7 +48,8 @@ wip/
         ├── config.py       # Config loading/saving, TOML, defaults
         ├── discovery.py    # Find git repos by walking directories
         ├── scanner.py      # Git status collection per repo (GitPython)
-        └── display.py      # Rich-based terminal rendering
+        ├── display.py      # Rich-based terminal rendering
+        └── worklist.py     # WIP task tracker, JSON persistence
 ```
 
 ### Data flow
@@ -68,8 +74,13 @@ cli.py: _run_briefing()
     │         collects branch, dirty, staged, untracked, stash,
     │         ahead/behind, recent branches, recent commits
     │
+    ├── worklist.py: get_items()        → list[WorkItem]
+    │       reads ~/.wip/worklist.json
+    │       filters by status, optionally by repo
+    │
     └── display.py: render_briefing()   → terminal output (Rich)
             or render_json()            → JSON to stdout
+            includes worklist section + items under repos
 ```
 
 ### Module responsibilities
@@ -80,7 +91,8 @@ cli.py: _run_briefing()
 | `config.py`    | Read/write `~/.wip/config.toml`, defaults    | `WipConfig`, `load_config()`, `save_config()`, `detect_git_author()`, `CONFIG_PATH` |
 | `discovery.py` | Find git repos in filesystem                 | `discover_repos(directories, depth)`           |
 | `scanner.py`   | Collect git status for each repo             | `RepoStatus`, `BranchInfo`, `CommitInfo`, `scan_repo()`, `scan_repos()` |
-| `display.py`   | Render output to terminal or JSON            | `render_briefing(repos, verbose)`, `render_json(repos)` |
+| `display.py`   | Render output to terminal or JSON            | `render_briefing()`, `render_json()`, `render_worklist()` |
+| `worklist.py`  | WIP task tracker, JSON persistence           | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `get_items_for_repo()`, `detect_repo()` |
 
 ---
 
@@ -135,6 +147,19 @@ class CommitInfo:
     message: str            # First line of commit message
     ago: str                # Human-readable time since commit
     timestamp: float        # Unix timestamp (for sorting)
+```
+
+### WorkItem (worklist.py)
+
+```python
+@dataclass
+class WorkItem:
+    id: int                            # Auto-assigned sequential ID
+    description: str                   # What the user is working on
+    created_at: float                  # Unix timestamp
+    status: str = "open"               # "open" or "done"
+    repo: str | None = None            # Absolute repo path (optional)
+    completed_at: float | None = None  # Unix timestamp when marked done
 ```
 
 ---
@@ -236,6 +261,14 @@ recent_days = 14
 - **Writing:** manual string formatting (no TOML writer library). The config structure is flat enough that simple f-string generation is sufficient
 - If no config file exists, `load_config()` returns a `WipConfig` with empty defaults
 
+### Worklist file
+
+```
+~/.wip/worklist.json
+```
+
+A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `max(existing IDs) + 1`, starting at 1. Completed items are kept (status `"done"`) but hidden from default views. Repo paths are stored as absolute paths; queries normalize with `os.path.realpath()` for comparison.
+
 ---
 
 ## 7. Repo discovery rules
@@ -263,13 +296,16 @@ recent_days = 14
 - Rich terminal display (color, icons, compact/verbose)
 - CLI wiring (wip, wip scan, wip config, --json, --verbose)
 
-### Phase 2: Interactive Worklist (PLANNED)
+### Phase 2: Interactive Worklist (DONE)
 
-- Track work-in-progress items across repos
-- `wip add "task description"` — add a WIP item
-- `wip done <id>` — mark item complete
-- Persistent state in `~/.wip/state.json`
-- Show WIP items in the briefing
+- `wip add "description"` — add a WIP item, auto-links to current repo
+- `wip add "description" --repo /path` — add item linked to explicit repo
+- `wip done <id>` — mark item as done (kept but hidden)
+- `wip list` — show open items; `wip list --all` includes completed
+- Persistent state in `~/.wip/worklist.json`
+- Worklist section shown in briefing before repos
+- Items shown under their linked repos in the briefing
+- JSON output includes `worklist` array alongside `repos`
 
 ### Phase 3: Smart Suggestions (PLANNED)
 
@@ -357,6 +393,13 @@ wip --verbose
 3. Render it in `_render_repo()` in `display.py`
 4. Ensure it serializes correctly in `render_json()` (dataclasses.asdict handles this)
 
+### When extending the worklist
+
+1. Add fields to `WorkItem` in `worklist.py` with sensible defaults (for backward-compatible JSON)
+2. Update `add_item()` to accept and populate the new field
+3. Render it in `_render_work_item()` in `display.py`
+4. Ensure it serializes correctly (dataclasses.asdict handles this)
+
 ### When modifying config
 
 1. Add the field to `WipConfig` with a sensible default
@@ -392,7 +435,7 @@ Package metadata. Name: `wip-cli`. Entry point: `wip = "wip.cli:app"`. Build: Ha
 Package marker. Exports `__version__ = "0.1.0"`.
 
 ### `src/wip/cli.py`
-CLI entry point. Creates Typer app with `config` subgroup. Default action (no subcommand) runs the briefing pipeline. Contains `_run_briefing()` which orchestrates config → discovery → scan → display.
+CLI entry point. Creates Typer app with `config` subgroup. Default action (no subcommand) runs the briefing pipeline. Contains `_run_briefing()` which orchestrates config → discovery → scan → worklist → display. Also contains `add`, `done`, and `list` commands for the WIP tracker.
 
 ### `src/wip/config.py`
 Config management. `WipConfig` dataclass. `load_config()` reads TOML. `save_config()` writes TOML. `detect_git_author()` runs `git config user.name`. Config lives at `~/.wip/config.toml`.
@@ -404,4 +447,7 @@ Repo discovery. `discover_repos()` is the public API. `_walk_for_repos()` does r
 Git scanner. `scan_repo()` collects all status for one repo. `scan_repos()` iterates over multiple. Helper functions: `_count_stashes()`, `_ahead_behind()`, `_recent_branches()`, `_recent_commits()`, `_time_ago()`. All wrapped in try/except for resilience.
 
 ### `src/wip/display.py`
-Terminal rendering. `render_briefing()` for human output. `render_json()` for machine output. `_render_repo()` handles one repo's display with status icons and colors.
+Terminal rendering. `render_briefing()` for human output. `render_json()` for machine output. `_render_repo()` handles one repo's display with status icons and colors. `render_worklist()` renders the WIP items section. `_render_work_item()` renders a single item with done/open styling. Items also appear under their linked repos.
+
+### `src/wip/worklist.py`
+WIP task tracker. `WorkItem` dataclass. `load_worklist()`/`save_worklist()` handle JSON persistence at `~/.wip/worklist.json`. `add_item()` creates items with auto-incrementing IDs. `complete_item()` marks done. `get_items()` and `get_items_for_repo()` provide filtered queries. `detect_repo()` walks cwd upward to find the nearest git repo root.
