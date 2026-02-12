@@ -6,7 +6,7 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 
 ## Demo
 
-https://github.com/drmnaik/wip/raw/main/assets/wip-demo.mov
+![demo](assets/demo.gif)
 
 ## Features
 
