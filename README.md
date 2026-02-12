@@ -189,6 +189,12 @@ then circle back to the frontend TODO.
 - ⚠ — Dirty files (modified, staged, or untracked)
 - ↓ — Behind remote (needs pull)
 
+## Privacy
+
+- `wip scan` runs entirely locally — no data leaves your machine.
+- `wip ai` commands send repository metadata (commit messages, branch names, file paths, work items) to your configured LLM provider (Anthropic, OpenAI, or Gemini). No file contents or diffs are sent.
+- API keys are never stored in config — only the environment variable name is saved.
+
 ## Development
 
 ```bash
