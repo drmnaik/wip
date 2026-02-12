@@ -5,7 +5,7 @@
 ## Quick reference
 
 - **What:** CLI morning briefing tool for developers — scans git repos, shows status, tracks work-in-progress items
-- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist)
+- **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic SDK (LLM)
 - **Build:** Hatchling, src-layout (`src/wip/`), entry point `wip = "wip.cli:app"`
 - **Config:** `~/.wip/config.toml`
 - **Worklist:** `~/.wip/worklist.json`
@@ -31,6 +31,12 @@
 | `scanner.py`   | Collect git status per repo      | `RepoStatus`, `scan_repo()`, `scan_repos()`  |
 | `display.py`   | Rich terminal output             | `render_briefing()`, `render_json()`, `render_worklist()` |
 | `worklist.py`  | WIP task tracker, JSON persist   | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `detect_repo()` |
+| `llm/base.py`  | ABC, response type, errors       | `LLMProvider`, `LLMResponse`, `LLMError` |
+| `llm/registry.py`| Provider lookup, key resolution | `get_provider()`, `list_providers()` |
+| `llm/prompts.py` | Prompt assembly from scan data  | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
+| `llm/anthropic.py`| Anthropic Claude (implemented) | `AnthropicProvider` |
+| `llm/openai.py`  | OpenAI GPT (stub)              | `OpenAIProvider` |
+| `llm/gemini.py`  | Google Gemini (stub)           | `GeminiProvider` |
 
 ## How to extend
 
@@ -42,6 +48,12 @@
 
 - **New worklist field:** Add to `WorkItem` dataclass → update `add_item()` → render in `_render_work_item()`
 - **New worklist command:** Add `@app.command()` in `cli.py` → delegate to `worklist.py`
+
+## How to extend (LLM)
+
+- **New provider:** Create `llm/<name>.py` extending `LLMProvider` → implement `complete()` + `stream()` → register in `llm/registry.py` PROVIDERS dict
+- **New AI command:** Add `@ai_app.command()` in `cli.py` → use `_get_llm_provider()` + `_scan_all()` + `_llm_call()`
+- **New prompt type:** Add `build_*_prompt()` to `llm/prompts.py` returning `(system, user)` tuple
 
 ## Commands
 
@@ -56,4 +68,7 @@ wip add "description"     # Add WIP item (auto-links to current repo)
 wip done <id>             # Mark item as done
 wip list                  # Show open items
 wip list --all            # Include completed items
+wip ai briefing           # AI narrative morning briefing
+wip ai standup            # Generate standup update
+wip ai ask "question"     # Ask about your work
 ```

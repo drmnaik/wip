@@ -26,6 +26,9 @@
 | `wip done <id>`     | Mark a WIP item as done                          |
 | `wip list`          | Show open WIP items                              |
 | `wip list --all`    | Show all WIP items including completed           |
+| `wip ai briefing`   | AI-powered narrative morning briefing            |
+| `wip ai standup`    | Generate a standup update from git activity      |
+| `wip ai ask "..."`  | Ask a free-form question about your work         |
 
 ---
 
@@ -49,7 +52,15 @@ wip/
         ├── discovery.py    # Find git repos by walking directories
         ├── scanner.py      # Git status collection per repo (GitPython)
         ├── display.py      # Rich-based terminal rendering
-        └── worklist.py     # WIP task tracker, JSON persistence
+        ├── worklist.py     # WIP task tracker, JSON persistence
+        └── llm/
+            ├── __init__.py     # Re-exports LLMProvider, get_provider, list_providers
+            ├── base.py         # ABC, LLMResponse dataclass, error types
+            ├── registry.py     # Provider name → class mapping, API key resolution
+            ├── prompts.py      # Prompt assembly from scan data
+            ├── anthropic.py    # Anthropic Claude provider (implemented)
+            ├── openai.py       # OpenAI GPT provider (stub)
+            └── gemini.py       # Google Gemini provider (stub)
 ```
 
 ### Data flow
@@ -81,6 +92,24 @@ cli.py: _run_briefing()
     └── display.py: render_briefing()   → terminal output (Rich)
             or render_json()            → JSON to stdout
             includes worklist section + items under repos
+
+User runs `wip ai briefing` (or standup/ask)
+    │
+    ▼
+cli.py: _get_llm_provider()
+    │
+    ├── config.py: load_config()        → WipConfig.llm (provider, model, api_key_env)
+    ├── llm/registry.py: get_provider() → LLMProvider instance
+    │       resolves API key from env vars
+    │       lazy-imports provider class
+    │
+    ├── cli.py: _scan_all()             → (repos, wip_items)
+    │       same scan pipeline as regular briefing
+    │
+    ├── llm/prompts.py: build_*_prompt() → (system, user) prompt pair
+    │       assembles repo state + work items into LLM context
+    │
+    └── provider.stream(system, user)   → streamed text to terminal
 ```
 
 ### Module responsibilities
@@ -93,10 +122,27 @@ cli.py: _run_briefing()
 | `scanner.py`   | Collect git status for each repo             | `RepoStatus`, `BranchInfo`, `CommitInfo`, `scan_repo()`, `scan_repos()` |
 | `display.py`   | Render output to terminal or JSON            | `render_briefing()`, `render_json()`, `render_worklist()` |
 | `worklist.py`  | WIP task tracker, JSON persistence           | `WorkItem`, `add_item()`, `complete_item()`, `get_items()`, `get_items_for_repo()`, `detect_repo()` |
+| `llm/__init__` | Re-exports for the LLM package                | `LLMProvider`, `LLMResponse`, `get_provider()`, `list_providers()` |
+| `llm/base.py`  | Abstract provider class, response type, errors | `LLMProvider`, `LLMResponse`, `LLMError`, `LLMAuthError`, `LLMRateLimitError` |
+| `llm/registry.py`| Provider lookup and API key resolution       | `get_provider()`, `list_providers()` |
+| `llm/prompts.py` | Assembles scan data into LLM prompts         | `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` |
+| `llm/anthropic.py`| Anthropic Claude provider (implemented)      | `AnthropicProvider` |
+| `llm/openai.py`  | OpenAI GPT provider (stub)                   | `OpenAIProvider` |
+| `llm/gemini.py`  | Google Gemini provider (stub)                | `GeminiProvider` |
 
 ---
 
 ## 3. Data models
+
+### LLMConfig (config.py)
+
+```python
+@dataclass
+class LLMConfig:
+    provider: str = ""       # "anthropic", "openai", "gemini"
+    model: str = ""          # Provider-specific model ID (uses provider default if empty)
+    api_key_env: str = ""    # Env var name holding the API key
+```
 
 ### WipConfig (config.py)
 
@@ -107,6 +153,7 @@ class WipConfig:
     author: str              # Git author name for filtering commits
     scan_depth: int          # How deep to recurse (default: 3)
     recent_days: int         # Lookback window for branches (default: 14)
+    llm: LLMConfig           # LLM provider settings (optional)
 ```
 
 ### RepoStatus (scanner.py)
@@ -162,6 +209,17 @@ class WorkItem:
     completed_at: float | None = None  # Unix timestamp when marked done
 ```
 
+### LLMResponse (llm/base.py)
+
+```python
+@dataclass
+class LLMResponse:
+    text: str                # Generated text
+    input_tokens: int = 0    # Tokens in the prompt
+    output_tokens: int = 0   # Tokens in the response
+    model: str = ""          # Model ID used
+```
+
 ---
 
 ## 4. Dependencies & rationale
@@ -174,6 +232,7 @@ All dependencies are declared in `pyproject.toml`.
 | `gitpython`  | `>=3.1.0` | Git repo interaction — branches, diffs, logs, stash, remotes without shelling out |
 | `rich`       | `>=13.0.0`| Terminal output — colors, styled text, JSON pretty-printing |
 | `tomli`      | `>=1.0.0` | TOML parsing on Python 3.9/3.10 (stdlib `tomllib` on 3.11+). Conditional: `python_version < '3.11'` |
+| `anthropic`  | `>=0.79.0`| Anthropic Claude API SDK. Optional — only needed if using `anthropic` LLM provider |
 
 ### Build system
 
@@ -253,6 +312,11 @@ directories = ["/Users/you/projects", "/Users/you/work"]
 author = "Your Name"
 scan_depth = 3
 recent_days = 14
+
+[llm]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+api_key_env = "ANTHROPIC_API_KEY"
 ```
 
 ### TOML handling
@@ -314,11 +378,39 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Suggest "you might want to pull" when behind remote
 - Suggest "you left off on branch X" based on most recent activity
 
-### Phase 4: Extensions (FUTURE)
+### Phase 4: LLM Integration (DONE)
 
-- Plugin system for custom scanners
-- GitHub/GitLab integration (open PRs, assigned issues)
-- Team mode (share state across machines)
+- Provider abstraction layer (`llm/base.py`) with ABC, response type, error hierarchy
+- Provider registry (`llm/registry.py`) with lazy imports and API key resolution from env vars
+- Prompt assembly (`llm/prompts.py`) — builds structured context from scan data + work items
+- Anthropic Claude provider (`llm/anthropic.py`) — fully implemented with streaming
+- OpenAI and Gemini providers — scaffolded with stubs
+- `wip ai briefing` — narrative morning briefing via LLM
+- `wip ai standup` — generate standup update from git activity
+- `wip ai ask "..."` — free-form questions about your work
+- Config extended with `[llm]` section (provider, model, api_key_env)
+- `wip config init` updated with optional LLM setup
+- Clean error handling — no tracebacks, user-friendly messages
+- All AI commands use streaming output
+
+### Phase 5: Agent Wrapper (FUTURE)
+
+- `wip run <agent> "task"` — wrap coding agents, track sessions
+- Agent registry — what each agent did, branches, PRs, duration
+- Stuck detection — agent died + no PR + dirty state
+- Context handoff — launch new agent with previous agent's context
+
+### Phase 6: Agent Intelligence (FUTURE)
+
+- `wip review` — prioritized review queue of agent work
+- `wip conflicts` — LLM detects semantic overlaps across branches
+- `wip delegate` — launch agent with assembled context
+
+### Phase 7: Orchestration (FUTURE)
+
+- `wip plan "goal"` — decompose goal into human + agent tasks
+- `wip orchestrate` — execute plans with dependency-aware scheduling
+- `wip habits` — pattern analysis from historical sessions
 
 ---
 
@@ -400,6 +492,24 @@ wip --verbose
 3. Render it in `_render_work_item()` in `display.py`
 4. Ensure it serializes correctly (dataclasses.asdict handles this)
 
+### When adding a new LLM provider
+
+1. Create `src/wip/llm/<provider>.py` with a class extending `LLMProvider`
+2. Implement `complete()` (returns `LLMResponse`) and `stream()` (yields `str` chunks)
+3. Map provider errors to `LLMAuthError`, `LLMRateLimitError`, `LLMError`
+4. Use lazy imports for the provider SDK (catch `ImportError` with a helpful message)
+5. Use lazy client creation (`_get_client()` pattern)
+6. Set a `DEFAULT_MODEL` and `name` class attribute
+7. Register in `llm/registry.py` `PROVIDERS` dict: `"name": ("dotted.class.path", "ENV_VAR_NAME")`
+
+### When adding a new AI command
+
+1. Add `@ai_app.command()` in `cli.py`
+2. Use `_get_llm_provider()` to get the provider
+3. Use `_scan_all()` to get repos + work items
+4. Create a new `build_*_prompt()` in `llm/prompts.py` if needed
+5. Use `_llm_call(provider, system, user)` for streaming with error handling
+
 ### When modifying config
 
 1. Add the field to `WipConfig` with a sensible default
@@ -423,6 +533,10 @@ wip --verbose
 - **Stash count calls git twice** — `repo.git.stash("list")` is called in the conditional and again for splitlines
 - **`_tracking_name()` always returns "origin"** — should inspect the actual remote name
 - **No Windows testing** — paths and shell assumptions are macOS/Linux
+- **Only Anthropic provider implemented** — OpenAI and Gemini are stubs
+- **`anthropic` is not in pyproject.toml dependencies** — installed separately. Provider gives clean error if missing.
+- **LLM max_tokens is hardcoded to 1024** — should be configurable for longer responses
+- **No token budget management** — large repos with many commits could exceed context limits
 
 ---
 
@@ -435,10 +549,10 @@ Package metadata. Name: `wip-cli`. Entry point: `wip = "wip.cli:app"`. Build: Ha
 Package marker. Exports `__version__ = "0.1.0"`.
 
 ### `src/wip/cli.py`
-CLI entry point. Creates Typer app with `config` subgroup. Default action (no subcommand) runs the briefing pipeline. Contains `_run_briefing()` which orchestrates config → discovery → scan → worklist → display. Also contains `add`, `done`, and `list` commands for the WIP tracker.
+CLI entry point. Creates Typer app with `config` and `ai` subgroups. Default action (no subcommand) runs the briefing pipeline. Contains `_run_briefing()` which orchestrates config → discovery → scan → worklist → display. Also contains `add`, `done`, `list` commands for the WIP tracker, and `ai briefing`, `ai standup`, `ai ask` commands for LLM features. Helper `_get_llm_provider()` resolves provider from config, `_scan_all()` runs the scan pipeline, `_llm_call()` handles streaming with error handling.
 
 ### `src/wip/config.py`
-Config management. `WipConfig` dataclass. `load_config()` reads TOML. `save_config()` writes TOML. `detect_git_author()` runs `git config user.name`. Config lives at `~/.wip/config.toml`.
+Config management. `WipConfig` dataclass (includes nested `LLMConfig`). `load_config()` reads TOML including `[llm]` section. `save_config()` writes TOML. `detect_git_author()` runs `git config user.name`. Config lives at `~/.wip/config.toml`.
 
 ### `src/wip/discovery.py`
 Repo discovery. `discover_repos()` is the public API. `_walk_for_repos()` does recursive traversal. Stops at `.git/` dirs, skips junk directories, deduplicates.
@@ -451,3 +565,24 @@ Terminal rendering. `render_briefing()` for human output. `render_json()` for ma
 
 ### `src/wip/worklist.py`
 WIP task tracker. `WorkItem` dataclass. `load_worklist()`/`save_worklist()` handle JSON persistence at `~/.wip/worklist.json`. `add_item()` creates items with auto-incrementing IDs. `complete_item()` marks done. `get_items()` and `get_items_for_repo()` provide filtered queries. `detect_repo()` walks cwd upward to find the nearest git repo root.
+
+### `src/wip/llm/__init__.py`
+Package re-exports: `LLMProvider`, `LLMResponse`, `get_provider()`, `list_providers()`.
+
+### `src/wip/llm/base.py`
+Abstract base class `LLMProvider` with `complete()` and `stream()` methods. `LLMResponse` dataclass for responses. Error hierarchy: `LLMError` (base), `LLMAuthError` (bad key), `LLMRateLimitError` (429).
+
+### `src/wip/llm/registry.py`
+Maps provider names to classes with lazy imports. `get_provider()` resolves API key (explicit → provider env var → `WIP_LLM_API_KEY` fallback) and instantiates provider. `list_providers()` returns available names.
+
+### `src/wip/llm/prompts.py`
+Builds `(system, user)` prompt pairs from scan data. `build_context()` formats repos + work items as text. `build_briefing_prompt()`, `build_standup_prompt()`, `build_query_prompt()` wrap context in task-specific templates. `_format_repo()` converts a single `RepoStatus` to readable text.
+
+### `src/wip/llm/anthropic.py`
+Anthropic Claude provider. Lazy client creation. `complete()` returns `LLMResponse`. `stream()` yields text chunks via `messages.stream()`. Maps Anthropic exceptions to `LLMAuthError`/`LLMRateLimitError`/`LLMError`. Default model: `claude-sonnet-4-5-20250929`.
+
+### `src/wip/llm/openai.py`
+OpenAI GPT provider stub. `complete()` and `stream()` raise `NotImplementedError` with TODO comments. Default model: `gpt-4o`.
+
+### `src/wip/llm/gemini.py`
+Google Gemini provider stub. `complete()` and `stream()` raise `NotImplementedError` with TODO comments. Default model: `gemini-2.0-flash`.
