@@ -1,12 +1,12 @@
 [project]
 name = "wip-cli"
 version = "0.1.2"
-description = "Where did I leave off? A developer briefing tool."
+description = "Developer situational awareness for the agentic coding era."
 requires-python = ">=3.9"
 authors = [{name = "Mahesh Naik"}]
 license = {text = "MIT"}
 readme = "README.md"
-keywords = ["git", "developer-tools", "cli", "briefing", "llm"]
+keywords = ["git", "developer-tools", "cli", "briefing", "llm", "ai-agents", "agentic-development"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",

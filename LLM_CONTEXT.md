@@ -4,7 +4,7 @@
 
 ## Quick reference
 
-- **What:** CLI developer briefing tool — scans git repos, shows status, tracks work-in-progress items
+- **What:** Developer situational awareness for the agentic coding era — scans git repos, detects AI agent activity, shows status, and generates narrative briefings
 - **Stack:** Python 3.9+, Typer (CLI), GitPython (git), Rich (display), TOML (config), JSON (worklist), Anthropic/OpenAI/Gemini SDK (LLM)
 - **Build:** Hatchling, src-layout (`src/wip/`), entry point `wip = "wip.cli:app"`
 - **Config:** `~/.wip/config.toml`

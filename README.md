@@ -1,8 +1,8 @@
-# wip — Where did I leave off?
+# wip — Developer situational awareness for the agentic coding era
 
 ![PyPI](https://img.shields.io/pypi/v/wip-cli) ![Python](https://img.shields.io/pypi/pyversions/wip-cli) ![License](https://img.shields.io/github/license/drmnaik/wip) ![Privacy](https://img.shields.io/badge/privacy-no_telemetry-green) ![Data](https://img.shields.io/badge/data-local_only_by_default-blue)
 
-A developer briefing tool. **wip** scans your git repositories and shows you what you were working on, what's dirty, what's stashed, and what needs your attention. With optional AI features, it turns raw git data into narrative briefings, standup drafts, and answers to natural language questions about your work.
+AI agents ship code while you sleep. They merge PRs, create branches, and push commits across your repos — and you need to know what happened. **wip** scans your git repositories, passively detects agent activity (Claude, Copilot, Cursor, Devin), and gives you a complete picture: what changed, what's dirty, what's stashed, and what needs your attention. With AI-powered briefings, it turns raw git signals into narrative summaries so you can pick up exactly where you — and your agents — left off.
 
 ## Demo
 
@@ -10,18 +10,18 @@ A developer briefing tool. **wip** scans your git repositories and shows you wha
 
 ## Features
 
+- 🕵️ **Agent detection** — passively detect coding agent activity (Claude, Copilot, Cursor, Devin) from git signals, with active/recent/stale status tracking
+- 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries — all agent-aware
+- 🧭 **Context-aware git help** — ask how to untangle branches, recover stashes, or fix mistakes — the AI sees your actual repo state
+- 🔌 **Multi-provider LLM** — Anthropic, OpenAI, and Gemini all implemented
 - 🔍 **Auto-discover** git repos in configured directories
 - 📊 **Status overview** — dirty files, stashes, ahead/behind tracking
 - 🌿 **Recent branches** — see branches you've touched recently
 - 💬 **Recent commits** — your commits from the last 24 hours
+- 📂 **Enriched file-level context** — changed files with diff stats, stash descriptions, commit bodies and file lists
 - 📝 **Work-in-progress tracker** — jot down tasks, link them to repos, see them in your briefing
 - 🎨 **Rich terminal output** — color-coded status with icons
 - 📦 **Multiple output modes** — human-friendly or JSON for scripting
-- 🕵️ **Agent detection** — passively detect coding agent activity (Claude, Copilot, Cursor, Devin) from git signals
-- 📂 **Enriched file-level context** — changed files with diff stats, stash descriptions, commit bodies and file lists in LLM prompts and verbose output
-- 🤖 **AI-powered briefings** — narrative summaries, standup drafts, natural language queries
-- 🧭 **Context-aware git help** — ask how to untangle branches, recover stashes, or fix mistakes — the AI sees your actual repo state
-- 🔌 **Provider abstraction** — Anthropic and OpenAI implemented, Gemini — all implemented
 
 ## Installation
 
@@ -177,16 +177,24 @@ api-gateway (main) ↓
 ```
 ## Briefing
 
-You were deep in a token refresh bug in auth-service yesterday evening.
-You changed the retry logic in 3 files but stashed something — probably
-an alternative approach. Your note says the issue is around line 340.
-You might want to start by comparing your stash against your current changes.
+### auth-service
+Claude was busy overnight — 12 commits on agent/add-tests, touching
+14 files. It added unit tests for the token refresh flow and the retry
+logic you were working on. The branch is still active (last commit 23m ago).
+Meanwhile, you have 3 dirty files on fix/token-refresh with a stash that
+looks like an alternative approach. Review Claude's test coverage before
+resuming your fix — there may be overlap.
 
-The frontend is clean but you left a TODO about form validation on Tuesday.
-api-gateway just needs a pull — 3 commits behind, low priority.
+### frontend
+Clean, nothing to do here. You left a TODO about form validation on
+Tuesday but no urgency.
 
-Suggested focus: finish auth-service first (uncommitted work at risk),
-then circle back to the frontend TODO.
+### api-gateway
+3 commits behind origin — just needs a pull. Your note says to update
+the API docs once auth-service lands.
+
+Suggested focus: review Claude's agent/add-tests branch in auth-service,
+then resume your token refresh fix.
 ```
 
 ### Status Icons

@@ -6,9 +6,9 @@
 
 ## 1. What is wip?
 
-**wip** ("Where did I leave off?") is a CLI developer briefing tool. It scans local git repositories and surfaces what you were working on: dirty files, stashes, branches, recent commits, and sync status with remotes. It also includes a work-in-progress task tracker for jotting down what you're doing across repos.
+**wip** is a CLI tool for developer situational awareness in the agentic coding era. AI agents ship code while you sleep — merging PRs, creating branches, pushing commits across your repos. **wip** scans your local git repositories, passively detects agent activity (Claude, Copilot, Cursor, Devin), and surfaces what changed: dirty files, stashes, branches, recent commits, and sync status with remotes. It also includes a work-in-progress task tracker and AI-powered narrative briefings.
 
-**Core value proposition:** Run `wip` in your terminal and instantly know where you left off across all your projects.
+**Core value proposition:** Run `wip` and instantly know what happened across all your projects — including what your AI agents did while you were away.
 
 ### User-facing commands
 
