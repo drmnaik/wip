@@ -268,24 +268,24 @@ python -m wip.cli
 
 ## Roadmap
 
-**Phase 0+1: Foundation + Scanner** ✅
+**Phase 1: Foundation + Scanner** ✅
 - Config management, repo discovery, git status scanning, terminal output
 
 **Phase 2: Interactive Worklist** ✅
 - `wip add/done/list` commands with repo linking and persistent state
 
-**Phase 4: LLM Integration** ✅
+**Phase 3: LLM Integration** ✅
 - Provider abstraction (Anthropic, OpenAI, and Gemini all implemented)
 - `wip ai briefing`, `wip ai standup`, `wip ai ask` with streaming
 - Prompt assembly from scan data, config-driven provider/model selection
 
-**Phase 5: Passive Agent Detection** ✅
+**Phase 4: Passive Agent Detection** ✅
 - Detect coding agent activity from git signals (author names, branch patterns)
 - Agent sessions surface in `wip`, `wip --json`, and all AI commands automatically
 - Configurable author/branch patterns with sensible defaults (zero config required)
 - Status tracking: active (<1h), recent (<24h), stale (>24h)
 
-**Phase 6: Enriched File-Level Context** ✅
+**Phase 5: Enriched File-Level Context** ✅
 - Changed files with diff stats (insertions/deletions), color-coded by stage in verbose output
 - Stash descriptions surfaced in verbose display and LLM prompts
 - Commit bodies (capped at 3 lines) and per-commit file lists (capped at 10 paths) in LLM context

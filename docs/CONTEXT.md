@@ -405,7 +405,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 
 ## 8. Roadmap
 
-### Phase 0+1: Foundation + Scanner (DONE)
+### Phase 1: Foundation + Scanner (DONE)
 
 - Config management (TOML read/write, interactive init)
 - Repo discovery (directory walking)
@@ -424,7 +424,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Items shown under their linked repos in the briefing
 - JSON output includes `worklist` array alongside `repos`
 
-### Phase 4: LLM Integration (DONE)
+### Phase 3: LLM Integration (DONE)
 
 - Provider abstraction layer (`llm/base.py`) with ABC, response type, error hierarchy
 - Provider registry (`llm/registry.py`) with lazy imports and API key resolution from env vars
@@ -440,7 +440,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Clean error handling — no tracebacks, user-friendly messages
 - All AI commands use streaming output
 
-### Phase 5: Passive Agent Detection (DONE)
+### Phase 4: Passive Agent Detection (DONE)
 
 - Detect coding agent activity from git signals (commit authors + branch naming patterns)
 - `AgentsConfig` with configurable author substrings and branch prefixes (sensible defaults, zero config)
@@ -449,7 +449,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Surfaced in terminal display (color-coded), JSON output, and LLM prompt context
 - All existing commands (`wip`, `wip --json`, `wip ai briefing/standup/ask`) get agent awareness automatically
 
-### Phase 6: Enriched File-Level Context (DONE)
+### Phase 5: Enriched File-Level Context (DONE)
 
 - `FileChange` dataclass — path, status, stage, insertions, deletions per changed file
 - `CommitInfo` extended with commit body and per-commit file list
