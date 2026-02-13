@@ -97,6 +97,48 @@ branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
   - **authors** — substrings matched case-insensitively against commit author names
   - **branch_patterns** — branch name prefixes that indicate agent activity
 
+### LLM Provider Setup
+
+AI features (`wip ai briefing`, `wip ai standup`, `wip ai ask`) require an LLM provider. Pick one and follow the steps below.
+
+#### Anthropic (Claude)
+
+1. Get an API key at [console.anthropic.com](https://console.anthropic.com/)
+2. Export it: `export ANTHROPIC_API_KEY="sk-ant-..."`
+3. Add to your config:
+```toml
+[llm]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+api_key_env = "ANTHROPIC_API_KEY"
+```
+
+#### OpenAI (GPT)
+
+1. Get an API key at [platform.openai.com](https://platform.openai.com/api-keys)
+2. Export it: `export OPENAI_API_KEY="sk-..."`
+3. Add to your config:
+```toml
+[llm]
+provider = "openai"
+model = "gpt-4o"
+api_key_env = "OPENAI_API_KEY"
+```
+
+#### Google Gemini
+
+1. Get an API key at [aistudio.google.com](https://aistudio.google.com/apikey)
+2. Export it: `export GEMINI_API_KEY="..."`
+3. Add to your config:
+```toml
+[llm]
+provider = "gemini"
+model = "gemini-2.0-flash"
+api_key_env = "GEMINI_API_KEY"
+```
+
+> **Tip:** Add the `export` line to your `~/.bashrc` or `~/.zshrc` so the key persists across sessions. Leave `model` empty to use the provider's default.
+
 ## Commands
 
 ### Core
