@@ -50,56 +50,28 @@ pip install -e .
 
 ## Quick Start
 
+### 1. Set up wip (interactive)
+
 ```bash
-# First-time setup (interactive)
 wip config init
-
-# Show your briefing
-wip
-
-# Verbose mode with full details
-wip --verbose
-
-# JSON output for scripting
-wip --json
 ```
 
-## Configuration
+This walks you through:
+- **Directories** — which folders to scan for git repos
+- **Author name** — your git identity (auto-detected from `git config`)
+- **LLM provider** — optional, enables AI-powered briefings (Anthropic, OpenAI, or Gemini)
 
-Config is stored at `~/.wip/config.toml`:
+### 2. Run your first briefing
 
-```toml
-directories = ["/Users/you/projects", "/Users/you/work"]
-author = "Your Name"
-scan_depth = 3
-recent_days = 14
-
-[llm]
-provider = "anthropic"
-model = "claude-haiku-4-5-20251001"
-api_key_env = "ANTHROPIC_API_KEY"
-
-# Optional: customize agent detection patterns
-[agents]
-authors = ["claude", "copilot", "cursor", "devin", "codex", "github-actions", "bot"]
-branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
+```bash
+wip                # Show briefing
+wip --verbose      # Full details
+wip --json         # JSON output for scripting
 ```
 
-- **directories** — which directories to scan for git repos
-- **author** — your git author name (filters commits to show only yours)
-- **scan_depth** — how deep to search for repos (default: 3 levels)
-- **recent_days** — how far back to look for recent branches (default: 14 days)
-- **[llm]** — optional LLM configuration for AI features
-  - **provider** — `anthropic`, `openai`, or `gemini`
-  - **model** — model ID (leave empty for provider default)
-  - **api_key_env** — environment variable name holding your API key
-- **[agents]** — optional overrides for agent detection (works out of the box with defaults)
-  - **authors** — substrings matched case-insensitively against commit author names
-  - **branch_patterns** — branch name prefixes that indicate agent activity
+### 3. Set up an LLM provider (optional)
 
-### LLM Provider Setup
-
-AI features (`wip ai briefing`, `wip ai standup`, `wip ai ask`) require an LLM provider. Pick one and follow the steps below.
+AI features (`wip ai briefing`, `wip ai standup`, `wip ai ask`) require an LLM provider. You can configure this during `wip config init`, or manually — pick one below.
 
 #### Anthropic (Claude)
 
@@ -138,6 +110,39 @@ api_key_env = "GEMINI_API_KEY"
 ```
 
 > **Tip:** Add the `export` line to your `~/.bashrc` or `~/.zshrc` so the key persists across sessions. Leave `model` empty to use the provider's default.
+
+## Configuration Reference
+
+Config is stored at `~/.wip/config.toml`. You can edit it directly or re-run `wip config init`. View current settings with `wip config show`.
+
+```toml
+directories = ["/Users/you/projects", "/Users/you/work"]
+author = "Your Name"
+scan_depth = 3
+recent_days = 14
+
+[llm]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+api_key_env = "ANTHROPIC_API_KEY"
+
+# Optional: customize agent detection patterns
+[agents]
+authors = ["claude", "copilot", "cursor", "devin", "codex", "github-actions", "bot"]
+branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
+```
+
+| Field | Description | Default |
+|-------|-------------|---------|
+| `directories` | Folders to scan for git repos | current directory |
+| `author` | Your git author name (filters commits) | auto-detected |
+| `scan_depth` | How deep to recurse into directories | `3` |
+| `recent_days` | Lookback window for recent branches | `14` |
+| `[llm] provider` | `anthropic`, `openai`, or `gemini` | — |
+| `[llm] model` | Model ID (empty = provider default) | — |
+| `[llm] api_key_env` | Env var name holding your API key | — |
+| `[agents] authors` | Substrings matched against commit author names | Claude, Copilot, Cursor, Devin, etc. |
+| `[agents] branch_patterns` | Branch prefixes indicating agent activity | `agent/`, `claude/`, `copilot/`, etc. |
 
 ## Commands
 
