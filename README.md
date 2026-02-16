@@ -150,7 +150,7 @@ branch_patterns = ["agent/", "claude/", "copilot/", "devin/", "cursor/"]
 
 ```bash
 wip               # Show briefing (default command)
-wip scan          # Alias for wip
+wip status        # Alias for wip
 wip --json        # Output as JSON
 wip --verbose     # Show full details
 wip config init   # Interactive setup
@@ -252,7 +252,7 @@ then resume your token refresh fix.
 
 ## Privacy
 
-- `wip scan` runs entirely locally — no data leaves your machine.
+- `wip status` runs entirely locally — no data leaves your machine.
 - `wip ai` commands send repository metadata (commit messages, branch names, file paths, work items) to your configured LLM provider (Anthropic, OpenAI, or Gemini). No file contents or diffs are sent.
 - API keys are never stored in config — only the environment variable name is saved.
 
@@ -277,7 +277,7 @@ python -m wip.cli
 **Phase 3: LLM Integration** ✅
 - Provider abstraction (Anthropic, OpenAI, and Gemini all implemented)
 - `wip ai briefing`, `wip ai standup`, `wip ai ask` with streaming
-- Prompt assembly from scan data, config-driven provider/model selection
+- Prompt assembly from status data, config-driven provider/model selection
 
 **Phase 4: Passive Agent Detection** ✅
 - Detect coding agent activity from git signals (author names, branch patterns)

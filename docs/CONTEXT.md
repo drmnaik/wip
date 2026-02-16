@@ -15,7 +15,7 @@
 | Command             | Purpose                                        |
 |---------------------|-------------------------------------------------|
 | `wip`               | Show briefing (default, no subcommand)           |
-| `wip scan`          | Explicit alias for the briefing                 |
+| `wip status`        | Explicit alias for the briefing                 |
 | `wip config init`   | Interactive setup (directories, author name)     |
 | `wip config show`   | Print current configuration                      |
 | `wip version`       | Print version string                             |
@@ -411,7 +411,7 @@ A JSON array of `WorkItem` dicts. Created on first `wip add`. ID assignment: `ma
 - Repo discovery (directory walking)
 - Git scanner (branch, dirty, stash, ahead/behind, recent branches/commits)
 - Rich terminal display (color, icons, compact/verbose)
-- CLI wiring (wip, wip scan, wip config, --json, --verbose)
+- CLI wiring (wip, wip status, wip config, --json, --verbose)
 
 ### Phase 2: Interactive Worklist (DONE)
 

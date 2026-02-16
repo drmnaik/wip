@@ -77,11 +77,11 @@ def main(
 
 
 @app.command()
-def scan(
+def status(
     output_json: bool = typer.Option(False, "--json", help="Output as JSON."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show full detail."),
 ):
-    """Scan repos and show briefing (same as running `wip` with no args)."""
+    """Show repo status and briefing (same as running `wip` with no args)."""
     _run_briefing(output_json=output_json, verbose=verbose)
 
 
