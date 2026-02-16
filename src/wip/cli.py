@@ -88,7 +88,7 @@ def status(
 @app.command()
 def version():
     """Show the current version."""
-    typer.echo("wip v0.1.0")
+    typer.echo("wip v0.1.4")
 
 
 @app.command()
